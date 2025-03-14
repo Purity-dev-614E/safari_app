@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:church_app/services/super_services.dart';
 
 class Superanalytics extends StatefulWidget {
   const Superanalytics({super.key});
@@ -9,35 +9,30 @@ class Superanalytics extends StatefulWidget {
 }
 
 class _SuperanalyticsState extends State<Superanalytics> {
-
-  //Time Filter
   String selectedWeek = 'Week 1';
   String selectedMonth = 'January';
   String selectedYear = "2025";
+  Map<String, dynamic>? analyticsData;
 
-  //list of weeks, mnths and years
-  final List<String> weeks = [
-    'Week 1', 'Week 2', 'Week 3', 'Week 4'
-  ];
+  final List<String> weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
   final List<String> months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
   ];
+  final List<String> years = ['2024', '2025'];
 
-  final List<String> years =[
-    '2024','2025'
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchAnalytics();
+  }
 
+  Future<void> _fetchAnalytics() async {
+    Map<String, dynamic>? data = await AdminServices.getAnalytics();
+    setState(() {
+      analyticsData = data;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,106 +45,96 @@ class _SuperanalyticsState extends State<Superanalytics> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            //Time Filter section
             const Text(
               'Filtered by Time',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8.0,),
+            const SizedBox(height: 8.0),
             Row(
               children: [
-                //week dropdown
                 Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: selectedWeek,
-                        decoration: InputDecoration(
-                          labelText: 'Week',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12,vertical: 8 ),
-                        ),
-                        items: weeks.map((String week){
-                          return DropdownMenuItem<String>(
-                              value: week,
-                              child: Text(week),);
-                        }).toList(),
-                        onChanged: (value){
-                        if (value != null){
-                          setState(() {
-                            selectedWeek = value;
-                          });
-                        }
-                        },
-                    )
-                ),
-                //month dropdown
-                Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: selectedMonth,
-                      decoration: InputDecoration(
-                        labelText: "Month",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12,vertical: 8),
-
+                  child: DropdownButtonFormField<String>(
+                    value: selectedWeek,
+                    decoration: InputDecoration(
+                      labelText: 'Week',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      onChanged: (value){
-                        if (value != null){
-                          setState(() {
-                            selectedMonth = value;
-                          });
-                        }
-                      },
-                        items: months.map((String month){
-                          return DropdownMenuItem<String>(
-                            value: month,
-                              child: Text(month));
-                        }).toList(),
-                        )
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: weeks.map((String week) {
+                      return DropdownMenuItem<String>(
+                        value: week,
+                        child: Text(week),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedWeek = value;
+                        });
+                      }
+                    },
+                  ),
                 ),
-                //year Dropdown
                 Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: selectedYear,
-                      decoration: InputDecoration(
-                        labelText: "Year",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12,vertical: 8),
-
+                  child: DropdownButtonFormField<String>(
+                    value: selectedMonth,
+                    decoration: InputDecoration(
+                      labelText: "Month",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      onChanged: (value){
-                        if (value != null){
-                          setState(() {
-                            selectedYear = value;
-                          });
-                        }
-                      },
-                      items: years.map((String year){
-                        return DropdownMenuItem<String>(
-                            value: year,
-                            child: Text(year));
-                      }).toList(),
-                    )
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: months.map((String month) {
+                      return DropdownMenuItem<String>(
+                        value: month,
+                        child: Text(month),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedMonth = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: selectedYear,
+                    decoration: InputDecoration(
+                      labelText: "Year",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: years.map((String year) {
+                      return DropdownMenuItem<String>(
+                        value: year,
+                        child: Text(year),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedYear = value;
+                        });
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8,),
-            //Attendance Trends(line chart)
+            const SizedBox(height: 8),
             const Text(
               "Attendance Trends",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8,),
+            const SizedBox(height: 8),
             Container(
               height: 200,
               width: double.infinity,
@@ -157,23 +142,19 @@ class _SuperanalyticsState extends State<Superanalytics> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12.0),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Line Chart for Attendance Trends',
-                  style: TextStyle(
-                    color: Colors.grey
-                  ),
+                  analyticsData != null
+                      ? 'Line Chart for Attendance Trends: ${analyticsData!['attendance_trends']}'
+                      : 'Loading...',
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ),
             ),
-            const SizedBox(height: 8,),
-            //group comparison(bar chart)
+            const SizedBox(height: 8),
             const Text(
               "Group Comparison",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Container(
               height: 200,
@@ -182,12 +163,12 @@ class _SuperanalyticsState extends State<Superanalytics> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12.0),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'Bar Chart for Group Comparison',
-                  style: TextStyle(
-                      color: Colors.grey
-                  ),
+                  analyticsData != null
+                      ? 'Bar Chart for Group Comparison: ${analyticsData!['group_comparison']}'
+                      : 'Loading...',
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ),
             ),

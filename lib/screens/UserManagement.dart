@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:church_app/services/super_services.dart';
 
-class User{
+class User {
+  final String id;
   final String name;
   final String email;
   final String role;
   final String group;
 
   User({
+    required this.id,
     required this.name,
     required this.email,
     required this.role,
@@ -14,91 +17,96 @@ class User{
   });
 }
 
-
-
-class Usermanagement extends StatefulWidget {
-  const Usermanagement({super.key});
+class UserManagement extends StatefulWidget {
+  const UserManagement({super.key});
 
   @override
-  State<Usermanagement> createState() => _UsermanagementState();
+  State<UserManagement> createState() => _UserManagementState();
 }
 
-class _UsermanagementState extends State<Usermanagement> {
-
-  List<User> users = [
-    User(name: 'Purity Sang', email:"Purity@gmail.com", role: "Admin", group: "Youth"),
-    User(name: "Bob Smith", email: "Bob@gmail.com", role: "Member", group: "Choir"),
-    User(name: "Patricia", email: "patricia@gmail.com", role: "Member", group: "Sunday"),
-    User(name: "David", email: "David@gmail.com", role: "Admin", group: "Choir")
-  ];
-
+class _UserManagementState extends State<UserManagement> {
+  List<User> users = [];
+  List<dynamic> groups = [];
   String searchQuery = '';
 
-  List<User> get filteredUsers{
-    if (searchQuery.isEmpty)return users;
-    return users.where((user){
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    List<dynamic> userData = await AdminServices.getAllUsers();
+    List<dynamic> groupData = await AdminServices.getAllGroups();
+    setState(() {
+      users = userData.map((data) => User(
+        id: data['id'],
+        name: data['name'],
+        email: data['email'],
+        role: data['role'],
+        group: data['group'] ?? '',
+      )).toList();
+      groups = groupData;
+    });
+  }
+
+  List<User> get filteredUsers {
+    if (searchQuery.isEmpty) return users;
+    return users.where((user) {
       final lowerCaseQuery = searchQuery.toLowerCase();
       return user.name.toLowerCase().contains(lowerCaseQuery) ||
-      user.email.toLowerCase().contains(lowerCaseQuery);
+          user.email.toLowerCase().contains(lowerCaseQuery);
     }).toList();
   }
 
-  void _onEditUser(User user){
-    //Open an edit dialog or navigate to an edit screen(form)
+  void _onEditUser(User user) {
+    // Open an edit dialog or navigate to an edit screen (form)
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Edit user: ${user.name}"))
+      SnackBar(content: Text("Edit user: ${user.name}")),
     );
   }
 
-  void _onDeleteUser(User user){
-    // Show a Configaration Dialog before deletion
-    showDialog(context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Delete ${user.name}"),
-          content: const Text("Are you sure you want to delete this user?"),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text("Cancel"),
-            ),
-
-            TextButton(
-                onPressed: (){
-                  setState(() {
-                    users.remove(user);
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  "Delete",
-                  style: TextStyle(
-                    color: Colors.red
-                  ),
-                )
-            )
-          ],
-        )
-    );
-  }
-
-  void _onAssignGroup(User user, String newGroup) {
-    // Update the user group assignment using API
-    setState(() {
-      int index = users.indexOf(user);
-      users[index] = User(
-          name: user.name, 
-          email: user.email, 
-          role: user.role, 
-          group: user.group
+  Future<void> _onDeleteUser(User user) async {
+    bool success = await AdminServices.deleteUser(user.id);
+    if (success) {
+      setState(() {
+        users.remove(user);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("User ${user.name} deleted")),
       );
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${user.name} assigned to $newGroup")),
-    );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete user ${user.name}")),
+      );
+    }
   }
 
-  void _onAddUser(){
-    //Naviagate to an "Ad User" form or Open a dialog
+  Future<void> _onAssignGroup(User user, String newGroup) async {
+    bool success = await AdminServices.assignUserToGroup(user.id, newGroup);
+    if (success) {
+      setState(() {
+        int index = users.indexOf(user);
+        users[index] = User(
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          group: newGroup,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${user.name} assigned to $newGroup")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to assign ${user.name} to $newGroup")),
+      );
+    }
+  }
+
+  void _onAddUser() {
+    // Navigate to an "Add User" form or open a dialog
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Navigate to Add User Screen')),
     );
@@ -112,9 +120,9 @@ class _UsermanagementState extends State<Usermanagement> {
       ),
       body: Column(
         children: [
-          //search Bar
+          // Search Bar
           Padding(
-              padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8.0),
             child: TextField(
               decoration: InputDecoration(
                 hintText: "Search by Name or Email",
@@ -123,74 +131,65 @@ class _UsermanagementState extends State<Usermanagement> {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
               ),
-              onChanged: (value){
+              onChanged: (value) {
                 setState(() {
                   searchQuery = value;
                 });
               },
             ),
           ),
-          //User list
+          // User List
           Expanded(
-              child: ListView.builder(
-                itemCount: filteredUsers.length,
-                  itemBuilder: (context, index){
-                    final user = filteredUsers[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4,horizontal: 8),
-                      child: ListTile(
-                        title: Text(user.name),
-                        subtitle: Text("${user.email} • ${user.role} • ${user.group}"),
-                        trailing: Wrap(
-                          spacing: 8,
-                          children: [
-                            //edit button
-                            IconButton(
-                                onPressed: () => _onEditUser(user), 
-                                icon: Icon(
-                                    Icons.edit,
-                                  color: Colors.blue,
-                                )
-                            ),
-                            //Delete Button
-                            IconButton(
-                                onPressed: () => _onDeleteUser(user),
-                                icon: Icon(
-                                  Icons.delete,
-                                  color: Colors.blue,
-                                )
-                            ),
-                            //Assign Group Dropdown
-                            DropdownButton<String>(
-                              underline: const SizedBox(),
-                              icon: const Icon(Icons.group,color: Colors.green,),
-                              onChanged: (newGroup){
-                                if (newGroup != null) _onAssignGroup(user, newGroup);
-                              },
-                              items: <String> [
-                                "Choir","Youth","Sunday School"
-                              ].map<DropdownMenuItem<String>>((String group){
-                                return DropdownMenuItem<String>(
-                                value: group,
-                                child: Text(group),
-                                );
-                              },
-                              ).toList()
-                            )
-                          ],
+            child: ListView.builder(
+              itemCount: filteredUsers.length,
+              itemBuilder: (context, index) {
+                final user = filteredUsers[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: ListTile(
+                    title: Text(user.name),
+                    subtitle: Text("${user.email} • ${user.role} • ${user.group}"),
+                    trailing: Wrap(
+                      spacing: 8,
+                      children: [
+                        // Edit Button
+                        IconButton(
+                          onPressed: () => _onEditUser(user),
+                          icon: Icon(Icons.edit, color: Colors.blue),
                         ),
-                      ),
-                    );
-                  }
-                  )
-          )
+                        // Delete Button
+                        IconButton(
+                          onPressed: () => _onDeleteUser(user),
+                          icon: Icon(Icons.delete, color: Colors.red),
+                        ),
+                        // Assign Group Dropdown
+                        DropdownButton<String>(
+                          underline: const SizedBox(),
+                          icon: const Icon(Icons.group, color: Colors.green),
+                          onChanged: (newGroup) {
+                            if (newGroup != null) _onAssignGroup(user, newGroup);
+                          },
+                          items: groups.map<DropdownMenuItem<String>>((dynamic group) {
+                            return DropdownMenuItem<String>(
+                              value: group['id'],
+                              child: Text(group['name']),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-          onPressed: _onAddUser,
-        tooltip: "Add User",
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _onAddUser,
+      //   tooltip: "Add User",
+      //   child: const Icon(Icons.add),
+      // ),
     );
   }
 }

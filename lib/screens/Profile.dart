@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -12,6 +15,13 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   File? _image;
   final picker = ImagePicker();
+  String? _full_name;
+  String? _email;
+  String? _gender;
+  String? _role;
+  String? _location;
+  String? _next_of_kin;
+  String? _next_of_kin_contact;
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -22,6 +32,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     });
   }
 
+  Future<void> _fetchUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('auth_token');
+    if (token == null) return;
+
+    final response = await http.get(
+      Uri.parse('http://your-backend-url.com/api/user/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _full_name = data['full_name'];
+        _email = data['email'];
+        _role = data['role'];
+        _location = data['location'];
+        _gender = data['gender'];
+        _next_of_kin = data['next_of_kin'];
+        _next_of_kin_contact = data['next_of_kin_contact'];
+        // Assuming the image URL is returned in the response
+        _image = File(data['profile_picture']);
+      });
+    } else {
+      print('Failed to fetch user info: ${response.body}');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserInfo();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,7 +77,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Profile Picture
             GestureDetector(
               onTap: _pickImage,
               child: CircleAvatar(
@@ -42,26 +88,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Editable Fields
-            _buildTextField("Name", "Purity Sang"),
-            _buildTextField("Email", "Purity@email.com"),
-            _buildTextField("Phone", "+254 712 345 678"),
-            _buildTextField("Address", "Nairobi, Kenya"),
-
+            _buildInfoRow("Name", _full_name),
+            _buildInfoRow("Email", _email),
+            _buildInfoRow("Role", _role),
+            _buildInfoRow("gender", _gender),
+            _buildInfoRow("Location", _location),
+            _buildInfoRow("Next of Kin", _next_of_kin),
+            _buildInfoRow("Next of Kin Contact", _next_of_kin_contact),
             const SizedBox(height: 20),
-
-            // Save Button
-            ElevatedButton(
-              onPressed: () {
-                // Save profile changes
-              },
-              child: const Text("Save Changes"),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Logout Button
             TextButton(
               onPressed: () {
                 // Handle logout
@@ -74,15 +108,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // Custom TextField Widget
-  Widget _buildTextField(String label, String initialValue) {
+  Widget _buildInfoRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(value ?? "", style: const TextStyle(color: Colors.grey)),
+        ],
       ),
     );
   }

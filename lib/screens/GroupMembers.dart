@@ -1,41 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:church_app/services/admin_services.dart';
 
-
-class Groupmembers extends StatefulWidget {
-  const Groupmembers({super.key});
+class GroupMembers extends StatefulWidget {
+  const GroupMembers({super.key});
 
   @override
-  State<Groupmembers> createState() => _GroupmembersState();
+  State<GroupMembers> createState() => _GroupMembersState();
 }
 
-class _GroupmembersState extends State<Groupmembers> {
-
-  //Dummy data for Members(To be replaced with dynamic data from backend)
-  final List<Map<String , String>> members = [
-    {"name": "Purity Sang", "Email" : "Purity@gmail.com", "role": "Group Admin"},
-    {"name": "Patricia", "Email" : "Patricia@gmail.com", "role": "Normal User"},
-    {"name": "George", "Email" : "george@gmail.com", "role": "Normal User"},
-    {"name": "Julia ", "Email" : "Julia@gmail.com", "role": "Normal User"},
-    {"name": "Enid ", "Email" : "Enid@gmail.com", "role": "Normal User"},
-  ];
-
+class _GroupMembersState extends State<GroupMembers> {
+  List<dynamic> members = [];
   String searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGroupMembers();
+  }
+
+  Future<void> _fetchGroupMembers() async {
+    List<dynamic> fetchedMembers = await AdminServices.getGroupMembers('groupId'); // Replace 'groupId' with actual group ID
+    setState(() {
+      members = fetchedMembers;
+    });
+  }
+
+  Future<void> _deleteMember(String memberId) async {
+    bool success = await AdminServices.removeMember('groupId', memberId); // Replace 'groupId' with actual group ID
+    if (success) {
+      _fetchGroupMembers();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Member deleted successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete member')),
+      );
+    }
+  }
+
+  void _editMember(String memberId) {
+    // Navigate to edit member screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditMemberScreen(memberId: memberId)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Group Members"
-        ),
+        title: const Text("Group Members"),
       ),
       body: Column(
         children: [
-          //search bar
+          // Search Bar
           Padding(
-              padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             child: TextField(
-              onChanged: (value){
+              onChanged: (value) {
                 setState(() {
                   searchQuery = value.toLowerCase();
                 });
@@ -51,84 +75,237 @@ class _GroupmembersState extends State<Groupmembers> {
           ),
           // Member List
           Expanded(
-              child: ListView.builder(
-                itemCount: members.length,
-                  itemBuilder: (context , index){
-                    final member = members[index];
-                    final name = member["name"]!;
-                    final email = member["Email"]!;
-                    final role = member["role"]!;
+            child: ListView.builder(
+              itemCount: members.length,
+              itemBuilder: (context, index) {
+                final member = members[index];
+                final name = member["name"]!;
+                final email = member["email"]!;
+                final role = member["role"]!;
 
+                if (!name.toLowerCase().contains(searchQuery) &&
+                    !email.toLowerCase().contains(searchQuery)) {
+                  return const SizedBox.shrink();
+                }
 
-                    if (!name.toLowerCase().contains(searchQuery) &&
-                        !email.toLowerCase().contains(searchQuery)) {
-                      return const SizedBox.shrink();
-                    }
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 10,vertical: 5 ),
-                      child: ListTile(
-                        leading: const Icon(Icons.person,color: Colors.blue,),
-                        title: Text(
-                            name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: ListTile(
+                    leading: const Icon(Icons.person, color: Colors.blue),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(email),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          role,
+                          style: const TextStyle(color: Colors.grey),
                         ),
-                        subtitle: Text(email),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                                role,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(width: 10,),
-                            IconButton(
-                                onPressed: (){},//Edit member logic
-                                icon: const Icon(Icons.edit,color: Colors.orange,)
-                            ),
-                            IconButton(
-                                onPressed: (){},//delete member logic
-                                icon: const Icon(Icons.delete)
-                            ),
-                          ],
+                        const SizedBox(width: 10),
+                        IconButton(
+                          onPressed: () => _editMember(member["id"]),
+                          icon: const Icon(Icons.edit, color: Colors.orange),
                         ),
-                      ),
-                    );
-                  }
-              )
-          )
+                        IconButton(
+                          onPressed: () => _deleteMember(member["id"]),
+                          icon: const Icon(Icons.delete),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
-      //floating Action Button
+      // Floating Action Button
       floatingActionButton: FloatingActionButton(
-          onPressed: (){
-            //navigate to Add Member screen
-          },
+        onPressed: () {
+          // Navigate to Add Member screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddMemberScreen()),
+          );
+        },
         child: const Icon(Icons.person_add_alt),
       ),
-
-      //Bottom nav
+      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard),
-            label: "Dashboard"
-            ),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart),
-              label: "Group analytics"
-            )
-          ],
-        onTap: (index){
-            if (index == 0){
-              Navigator.pushNamed(context, "/adminDashboard");
-            }
-            else if (index == 1){
-              Navigator.pushNamed(context, "/GroupAnalytics");
-            }
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: "Dashboard",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: "Group Analytics",
+          ),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, "/adminDashboard");
+          } else if (index == 1) {
+            Navigator.pushNamed(context, "/GroupAnalytics");
+          }
         },
+      ),
+    );
+  }
+}
+
+
+class AddMemberScreen extends StatefulWidget {
+  const AddMemberScreen({super.key});
+
+  @override
+  State<AddMemberScreen> createState() => _AddMemberScreenState();
+}
+
+class _AddMemberScreenState extends State<AddMemberScreen> {
+  final TextEditingController _memberIdController = TextEditingController();
+
+  Future<void> _addMember() async {
+    String memberId = _memberIdController.text;
+    bool success = await AdminServices.addMemberToGroup('groupId', memberId); // Replace 'groupId' with actual group ID
+    if (success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Member added successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add member')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Add Member"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _memberIdController,
+              decoration: const InputDecoration(
+                labelText: "Member ID",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _addMember,
+              child: const Text("Add Member"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class EditMemberScreen extends StatefulWidget {
+  final String memberId;
+
+  const EditMemberScreen({required this.memberId, super.key});
+
+  @override
+  State<EditMemberScreen> createState() => _EditMemberScreenState();
+}
+
+class _EditMemberScreenState extends State<EditMemberScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _roleController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMemberDetails();
+  }
+
+  Future<void> _fetchMemberDetails() async {
+    // Fetch member details and populate the controllers
+    // This is a placeholder implementation
+    Map<String, dynamic> memberDetails = await AdminServices.getMemberDetails(widget.memberId);
+    setState(() {
+      _nameController.text = memberDetails['name'];
+      _emailController.text = memberDetails['email'];
+      _roleController.text = memberDetails['role'];
+    });
+  }
+
+  Future<void> _updateMember() async {
+    // Update member details
+    // This is a placeholder implementation
+    bool success = await AdminServices.updateMemberDetails(
+      widget.memberId,
+      _nameController.text,
+      _emailController.text,
+      _roleController.text,
+    );
+    if (success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Member updated successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update member')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Edit Member"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: "Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _roleController,
+              decoration: const InputDecoration(
+                labelText: "Role",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _updateMember,
+              child: const Text("Update Member"),
+            ),
+          ],
+        ),
       ),
     );
   }

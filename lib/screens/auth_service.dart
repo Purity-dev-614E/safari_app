@@ -1,28 +1,51 @@
-import 'package:church_app/users.dart';
-import 'package:church_app/permissions.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-Future<User?> authenticateUser(String email, String password)async {
-  await Future.delayed(Duration(seconds: 2));
+class AuthService {
+  static const String baseUrl = "http://localhost:5000/api"; // Change to your backend URL
 
+  Future<bool> login(String email, String password) async {
+    final url = Uri.parse("$baseUrl/login");
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-  if (email == "superadmin@gmail.com" && password == "password") {
-    return User(
-        id: '1',
-        email: email,
-        role: UserRole.superAdmin);
-  } else if (email == "admin@gmail.com" && password == "password") {
-    return User(
-        id: '2',
-        email: email,
-        role: UserRole.admin);
-  } else if (email.endsWith("@gmail.com") && password == "password") {
-    return User(
-        id: '3',
-        email: email,
-        role: UserRole.normalUser
-    );
-  } else {
-    return null;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['token'];
+        await _saveToken(token);
+        return true;
+      } else {
+        print("Login failed: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("Error logging in: $e");
+      return false;
+    }
+  }
+
+  Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+  }
+
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
   }
 }
+
 

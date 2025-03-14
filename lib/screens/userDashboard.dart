@@ -1,9 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:church_app/services/user_services.dart';
 
+class UserDashboard extends StatefulWidget {
+  const UserDashboard({super.key});
 
-class userDashboard extends StatelessWidget {
-  const userDashboard({super.key});
+  @override
+  _UserDashboardState createState() => _UserDashboardState();
+}
 
+class _UserDashboardState extends State<UserDashboard> {
+  int _totalMembers = 0;
+  String _nextEvent = "";
+  List<dynamic> _upcomingEvents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDashboardData();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    // Fetch total number of group members
+    List<dynamic> groups = await UserServices.getUserGroups();
+    setState(() {
+      _totalMembers = groups.length;
+    });
+
+    // Fetch upcoming events
+    List<dynamic> events = await UserServices.getEvents();
+    setState(() {
+      _upcomingEvents = events;
+      if (events.isNotEmpty) {
+        _nextEvent = events[0]['name'];
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +58,8 @@ class userDashboard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSummaryCard("Total Members", "120"),
-                _buildSummaryCard("Next Event", "Sunday Service"),
+                _buildSummaryCard("Total Members", _totalMembers.toString()),
+                _buildSummaryCard("Next Event", _nextEvent),
               ],
             ),
 
@@ -36,15 +67,15 @@ class userDashboard extends StatelessWidget {
 
             // Upcoming Events List
             Expanded(
-              child: ListView(
-                children: [
-                  _buildEventCard(
-                      "Sunday Service", "Feb 11, 10:00 AM", "Main Church"),
-                  _buildEventCard(
-                      "Bible Study", "Feb 14, 6:00 PM", "Youth Hall"),
-                  _buildEventCard(
-                      "Community Outreach", "Feb 17, 9:00 AM", "Town Center"),
-                ],
+              child: ListView.builder(
+                itemCount: _upcomingEvents.length,
+                itemBuilder: (context, index) {
+                  return _buildEventCard(
+                    _upcomingEvents[index]['name'],
+                    _upcomingEvents[index]['date'],
+                    _upcomingEvents[index]['location'],
+                  );
+                },
               ),
             ),
           ],
@@ -77,8 +108,7 @@ class userDashboard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
-        title: Text(eventName, style: const TextStyle(fontWeight: FontWeight
-            .bold)),
+        title: Text(eventName, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text("$dateTime • $location"),
         leading: const Icon(Icons.event, color: Colors.blue),
       ),
