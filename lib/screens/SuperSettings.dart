@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:church_app/screens/assignAdmin.dart';
+
 
 class SuperSettings extends StatefulWidget {
   const SuperSettings({super.key});
@@ -158,15 +160,24 @@ class _SuperSettingsState extends State<SuperSettings> {
 
   Future<void> _toggleProfileEdits(bool value) async {
     if (!await _isSuperAdmin()) {
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('You do not have permission to change this setting')),
-    );
-    return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to change this setting')),
+      );
+      return;
     }
 
     setState(() {
-    allowProfileEdits = value;
+      allowProfileEdits = value;
     });
+  }
+
+  void _navigateToAssignAdminScreen(String groupId, String groupName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AssignGroupAdminScreen(groupId: groupId, groupName: groupName),
+      ),
+    );
   }
 
   @override
@@ -196,9 +207,18 @@ class _SuperSettingsState extends State<SuperSettings> {
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
               child: ListTile(
                 title: Text(group['name']),
-                trailing: IconButton(
-                  onPressed: () => _showDeleteGroupDialog(group['id'], group['name']),
-                  icon: Icon(Icons.delete, color: Colors.red),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () => _navigateToAssignAdminScreen(group['id'], group['name']),
+                      icon: Icon(Icons.person_add, color: Colors.blue),
+                    ),
+                    IconButton(
+                      onPressed: () => _showDeleteGroupDialog(group['id'], group['name']),
+                      icon: Icon(Icons.delete, color: Colors.red),
+                    ),
+                  ],
                 ),
               ),
             );

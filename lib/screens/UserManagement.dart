@@ -32,6 +32,7 @@ class _UserManagementState extends State<UserManagement> {
 
   final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
   final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -52,9 +53,13 @@ class _UserManagementState extends State<UserManagement> {
           group: data['group'] ?? '',
         )).toList();
         groups = groupData;
+        _isLoading = false;
       });
     } catch (e) {
       print('Failed to fetch data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -67,12 +72,7 @@ class _UserManagementState extends State<UserManagement> {
     }).toList();
   }
 
-  void _onEditUser(User user) {
-    // Open an edit dialog or navigate to an edit screen (form)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Edit user: ${user.name}")),
-    );
-  }
+
 
   Future<void> _onDeleteUser(User user) async {
     try {
@@ -113,12 +113,6 @@ class _UserManagementState extends State<UserManagement> {
     }
   }
 
-  void _onAddUser() {
-    // Navigate to an "Add User" form or open a dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Navigate to Add User Screen')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +120,9 @@ class _UserManagementState extends State<UserManagement> {
       appBar: AppBar(
         title: const Text("User Management"),
       ),
-      body: Column(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           // Search Bar
           Padding(
@@ -160,11 +156,6 @@ class _UserManagementState extends State<UserManagement> {
                     trailing: Wrap(
                       spacing: 8,
                       children: [
-                        // Edit Button
-                        IconButton(
-                          onPressed: () => _onEditUser(user),
-                          icon: Icon(Icons.edit, color: Colors.blue),
-                        ),
                         // Delete Button
                         IconButton(
                           onPressed: () => _onDeleteUser(user),
@@ -193,11 +184,7 @@ class _UserManagementState extends State<UserManagement> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onAddUser,
-        tooltip: "Add User",
-        child: const Icon(Icons.add),
-      ),
+
     );
   }
 }

@@ -6,7 +6,9 @@ import 'package:church_app/services/eventService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GroupAnalytics extends StatefulWidget {
-  const GroupAnalytics({super.key});
+  final String groupId;
+
+  const GroupAnalytics({super.key, required this.groupId});
 
   @override
   State<GroupAnalytics> createState() => _GroupAnalyticsState();
@@ -20,12 +22,13 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
 
   final AttendanceService _attendanceService = AttendanceService(baseUrl: 'http://your-backend-url.com/api');
   final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
-  final UserService _userService = UserService(baseUrl: 'http://your-back');
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
 
   @override
   void initState() {
     super.initState();
     _fetchAdminUserId();
+    _fetchAnalytics();
   }
 
   Future<void> _fetchAdminUserId() async {
@@ -33,7 +36,6 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
     setState(() {
       adminUserId = prefs.getString('user_id');
     });
-    _fetchAnalytics();
   }
 
   Future<bool> _isAdmin() async {
@@ -57,10 +59,13 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
 
     try {
       // Fetch event attendance data
-      List<dynamic>? fetchedEventAttendance = await _eventService.getAllEvents();
+      List<dynamic>? fetchedEventAttendance = await _eventService.getEventsByGroup(widget.groupId);
 
       // Fetch attendance data for the selected time period
-      List<dynamic>? fetchedPeriodicAttendance = await _attendanceService.getAttendanceByTimePeriod(selectedTimeFilter);
+      List<dynamic>? fetchedPeriodicAttendance = await _attendanceService.getAttendanceByTimePeriod(
+          widget.groupId,
+          selectedTimeFilter
+      );
 
       setState(() {
         eventAttendance = fetchedEventAttendance;
@@ -177,9 +182,9 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
         ],
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushNamed(context, "/GroupMembers");
+            Navigator.pushNamed(context, "/GroupMembers", arguments: widget.groupId);
           } else if (index == 1) {
-            Navigator.pushNamed(context, "/adminDashboard");
+            Navigator.pushNamed(context, "/adminDashboard", arguments: widget.groupId);
           }
         },
       ),

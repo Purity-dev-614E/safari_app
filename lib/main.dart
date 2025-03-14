@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/screens/login.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Map<String, dynamic> userInfo = await getUserInfo();
@@ -45,38 +44,54 @@ class MyApp extends StatelessWidget {
     } else if (!userInfo['profileComplete']) {
       home = UpdateProfileScreen();
     } else {
-      switch (userInfo['role']) {
-        case 'super_admin':
-          home = SuperAdminDashboard();
-          break;
-        case 'admin':
-          home = AdminDashboard();
-          break;
-        case 'user':
-          home = UserDashboard();
-          break;
-        default:
-          home = Login();
-      }
+      home = _getHomeScreen(userInfo['role']);
     }
 
     return MaterialApp(
       home: home,
+      onGenerateRoute: (settings) {
+        if (settings.name == '/adminDashboard') {
+          final groupId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => AdminDashboard(groupId: groupId),
+          );
+        } else if (settings.name == '/GroupAnalytics') {
+          final groupId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => GroupAnalytics(groupId: groupId),
+          );
+        } else if (settings.name == '/GroupMembers') {
+          final groupId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => GroupMembers(groupId: groupId),
+          );
+        }
+        return null;
+      },
       routes: {
         '/login': (context) => Login(),
         '/register': (context) => Signup(),
         '/super_admin_dashboard': (context) => SuperAdminDashboard(),
-        '/adminDashboard': (context) => AdminDashboard(),
         '/UserManagement': (context) => UserManagement(),
         '/SuperAnalytics': (context) => SuperAnalytics(),
         '/SuperSettings': (context) => SuperSettings(),
-        '/GroupMembers': (context) => GroupMembers(),
-        '/GroupAnalytics': (context) => GroupAnalytics(),
         '/userDashboard': (context) => UserDashboard(),
         '/Profile': (context) => UserProfileScreen(),
-
       },
     );
+  }
+
+  Widget _getHomeScreen(String role) {
+    switch (role) {
+      case 'super_admin':
+        return SuperAdminDashboard();
+      case 'admin':
+        return AdminDashboard(groupId: 'defaultGroupId'); // Provide a default or initial group ID
+      case 'user':
+        return UserDashboard();
+      default:
+        return Login();
+    }
   }
 }
 

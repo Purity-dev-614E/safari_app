@@ -19,8 +19,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _gender;
   String? _role;
   String? _location;
-  String? _next_of_kin;
-  String? _next_of_kin_contact;
+  // String? _next_of_kin;
+  // String? _next_of_kin_contact;
 
   final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
 
@@ -46,8 +46,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         _role = data['role'];
         _location = data['location'];
         _gender = data['gender'];
-        _next_of_kin = data['next_of_kin'];
-        _next_of_kin_contact = data['next_of_kin_contact'];
+        // _next_of_kin = data['next_of_kin'];
+        // _next_of_kin_contact = data['next_of_kin_contact'];
         // Assuming the image URL is returned in the response
         _image = File(data['profile_picture']);
       });
@@ -86,8 +86,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _buildInfoRow("Role", _role),
             _buildInfoRow("Gender", _gender),
             _buildInfoRow("Location", _location),
-            _buildInfoRow("Next of Kin", _next_of_kin),
-            _buildInfoRow("Next of Kin Contact", _next_of_kin_contact),
+
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {

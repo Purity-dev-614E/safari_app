@@ -18,10 +18,12 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
   List<dynamic>? groupDemographics;
   List<dynamic>? groups;
   String? superAdminUserId;
+  bool _isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
   final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'http://your-backend-url.com/api');
-  final UserService _userService = UserService(baseUrl: 'http://your-back');
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+
   @override
   void initState() {
     super.initState();
@@ -42,16 +44,14 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
       return userDetails['role'] == 'super_admin';
     } catch (e) {
-      print('Failed to fetch user details: $e');
+      _showError('Failed to fetch user details: $e');
       return false;
     }
   }
 
   Future<void> _fetchAnalytics() async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to view this page')),
-      );
+      _showError('You do not have permission to view this page');
       return;
     }
 
@@ -69,10 +69,20 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
         groups = fetchedGroups;
         attendanceData = fetchedAttendanceData;
         groupDemographics = fetchedGroupDemographics;
+        _isLoading = false;
       });
     } catch (e) {
-      print('Failed to fetch analytics data: $e');
+      _showError('Failed to fetch analytics data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -81,7 +91,9 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       appBar: AppBar(
         title: const Text("Analytics"),
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

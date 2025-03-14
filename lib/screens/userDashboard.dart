@@ -15,6 +15,7 @@ class _UserDashboardState extends State<UserDashboard> {
   int _totalMembers = 0;
   String _nextEvent = "";
   List<dynamic> _upcomingEvents = [];
+  bool _isLoading = true;
 
   final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
   final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
@@ -62,10 +63,20 @@ class _UserDashboardState extends State<UserDashboard> {
         if (events.isNotEmpty) {
           _nextEvent = events[0]['name'];
         }
+        _isLoading = false;
       });
     } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+      _showError('Failed to fetch dashboard data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -82,7 +93,9 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
         ],
       ),
-      body: Padding(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [

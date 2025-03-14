@@ -18,6 +18,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _location;
   String? _nextOfKin;
   String? _nextOfKinContact;
+  String? _phoneNumber;
 
   final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
 
@@ -30,13 +31,14 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
       try {
         final response = await _userService.updateUser(userId, {
-          'full_name': _fullName,
-          'email': _email,
-          'role': _role,
-          'gender': _gender,
-          'location': _location,
-          'next_of_kin': _nextOfKin,
-          'next_of_kin_contact': _nextOfKinContact,
+          'full_name': _fullName?.toLowerCase(),
+          'email': _email?.toLowerCase(),
+          'role': _role?.toLowerCase(),
+          'gender': _gender?.toLowerCase(),
+          'location': _location?.toLowerCase(),
+          'next_of_kin': _nextOfKin?.toLowerCase(),
+          'next_of_kin_contact': _nextOfKinContact?.toLowerCase(),
+          'phone_number': _phoneNumber,
         });
 
         await prefs.setString('full_name', _fullName!);
@@ -66,6 +68,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               _buildTextField("Location", (value) => _location = value),
               _buildTextField("Next of Kin", (value) => _nextOfKin = value),
               _buildTextField("Next of Kin Contact", (value) => _nextOfKinContact = value),
+              _buildPhoneNumberField(),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _updateProfile,
@@ -93,6 +96,44 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           return null;
         },
         onSaved: (value) => onSave(value!),
+      ),
+    );
+  }
+
+  Widget _buildPhoneNumberField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: 'Phone Number',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        validator: (value) {
+          if (value == null || !value.startsWith('+254')) {
+            return 'Phone number must start with +254';
+          }
+          return null;
+        },
+        onSaved: (value) => _phoneNumber = value,
+      ),
+    );
+  }
+
+  Widget _buildNextOfKinNumberField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: 'Phone Number',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        validator: (value) {
+          if (value == null || !value.startsWith('+254')) {
+            return 'Phone number must start with +254';
+          }
+          return null;
+        },
+        onSaved: (value) => _nextOfKinContact = value,
       ),
     );
   }

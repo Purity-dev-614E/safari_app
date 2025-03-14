@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 
 class GroupMembers extends StatefulWidget {
-  const GroupMembers({super.key});
+  final String groupId; // Add groupId as a parameter
+
+  const GroupMembers({required this.groupId, super.key});
 
   @override
   State<GroupMembers> createState() => _GroupMembersState();
@@ -22,7 +24,7 @@ class _GroupMembersState extends State<GroupMembers> {
 
   Future<void> _fetchGroupMembers() async {
     try {
-      List<dynamic> fetchedMembers = await _groupService.getGroupMembers('groupId'); // Replace 'groupId' with actual group ID
+      List<dynamic> fetchedMembers = await _groupService.getGroupMembers(widget.groupId);
       setState(() {
         members = fetchedMembers;
       });
@@ -33,20 +35,19 @@ class _GroupMembersState extends State<GroupMembers> {
 
   Future<void> _deleteMember(String memberId) async {
     try {
-      await _groupService.removeGroupMember('groupId', memberId); // Replace 'groupId' with actual group ID
+      await _groupService.removeGroupMember(widget.groupId, memberId);
       _fetchGroupMembers();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member deleted successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete member')),
+        SnackBar(content: Text('Failed to delete member: $e')),
       );
     }
   }
 
   void _editMember(String memberId) {
-    // Navigate to edit member screen
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => EditMemberScreen(memberId: memberId)),
@@ -61,7 +62,6 @@ class _GroupMembersState extends State<GroupMembers> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(8),
             child: TextField(
@@ -79,7 +79,6 @@ class _GroupMembersState extends State<GroupMembers> {
               ),
             ),
           ),
-          // Member List
           Expanded(
             child: ListView.builder(
               itemCount: members.length,
@@ -128,18 +127,15 @@ class _GroupMembersState extends State<GroupMembers> {
           ),
         ],
       ),
-      // Floating Action Button
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to Add Member screen
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddMemberScreen()),
+            MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: widget.groupId)),
           );
         },
         child: const Icon(Icons.person_add_alt),
       ),
-      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
@@ -163,9 +159,10 @@ class _GroupMembersState extends State<GroupMembers> {
   }
 }
 
-
 class AddMemberScreen extends StatefulWidget {
-  const AddMemberScreen({super.key});
+  final String groupId;
+
+  const AddMemberScreen({required this.groupId, super.key});
 
   @override
   State<AddMemberScreen> createState() => _AddMemberScreenState();
@@ -179,14 +176,14 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
     try {
       String memberId = _memberIdController.text;
 
-      await _groupService.addGroupMember('groupId', memberId); // Replace 'groupId' with actual group ID
+      await _groupService.addGroupMember(widget.groupId, memberId);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member added successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add member')),
+        SnackBar(content: Text('Failed to add member: $e')),
       );
     }
   }
@@ -220,8 +217,6 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   }
 }
 
-
-
 class EditMemberScreen extends StatefulWidget {
   final String memberId;
 
@@ -246,7 +241,6 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
 
   Future<void> _fetchMemberDetails() async {
     try {
-      // Fetch member details and populate the controllers
       Map<String, dynamic> memberDetails = await _groupService.getGroupById(widget.memberId);
       setState(() {
         _nameController.text = memberDetails['name'];
@@ -260,7 +254,6 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
 
   Future<void> _updateMember() async {
     try {
-      // Update member details
       await _groupService.updateGroup(
         widget.memberId,
         {
@@ -275,7 +268,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update member')),
+        SnackBar(content: Text('Failed to update member: $e')),
       );
     }
   }

@@ -16,6 +16,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int _totalGroups = 0;
   Map<String, dynamic>? _analytics;
   String? superAdminUserId;
+  bool _isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
   final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
@@ -41,16 +42,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
       return userDetails['role'] == 'super_admin';
     } catch (e) {
-      print('Failed to fetch user details: $e');
+      _showError('Failed to fetch user details: $e');
       return false;
     }
   }
 
   Future<void> _fetchDashboardData() async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to view this page')),
-      );
+      _showError('You do not have permission to view this page');
       return;
     }
 
@@ -67,10 +66,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           _totalUsers = users.length;
           _totalGroups = groups.length;
           _analytics = analytics;
+          _isLoading = false;
         });
       }
     } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+      _showError('Failed to fetch dashboard data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -83,7 +86,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         }
       }
     } catch (e) {
-      print('Failed to fetch group ID: $e');
+      _showError('Failed to fetch group ID: $e');
     }
     return null;
   }
@@ -113,6 +116,12 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       },
     );
     return groupName;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Widget _buildSummaryCard({
@@ -183,7 +192,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
@@ -216,8 +227,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   _buildQuickActionButton(
                     label: "Create Group",
                     icon: Icons.add,
-                    onPressed: ()
-                    {
+                    onPressed: () {
                       _promptForGroupName();
                     }, // Navigate to create group form
                   ),

@@ -42,6 +42,23 @@ class UserService {
     }
   }
 
+  Future<List<dynamic>> searchUsersByName(String name) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/search?name=$name'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to search users: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.put(

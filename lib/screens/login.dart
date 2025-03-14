@@ -17,12 +17,17 @@ class _LoginState extends State<Login> {
   final AuthService authService = AuthService(baseUrl: 'https://yourapi.com');  // Initialize AuthService with your base URL
 
   Future<void> _login() async {
+    final email = emailController.text;
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Email and password cannot be empty');
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
-
-    final email = emailController.text;
-    final password = passwordController.text;
 
     try {
       final response = await authService.logIn(email, password);
@@ -68,10 +73,14 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: ${e.toString()}')),
-      );
+      _showError('Login failed: ${e.toString()}');
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
