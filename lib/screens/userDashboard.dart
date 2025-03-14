@@ -1,3 +1,4 @@
+import 'package:church_app/screens/eventDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/groupServices.dart';
@@ -17,9 +18,12 @@ class _UserDashboardState extends State<UserDashboard> {
   List<dynamic> _upcomingEvents = [];
   bool _isLoading = true;
 
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
-  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(
+      baseUrl: 'http://your-backend-url.com/api');
+  final EventService _eventService = EventService(
+      baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(
+      baseUrl: 'http://your-backend-url.com/api');
 
   @override
   void initState() {
@@ -39,7 +43,8 @@ class _UserDashboardState extends State<UserDashboard> {
       String? userGroupId;
 
       for (var group in groups) {
-        List<dynamic> members = await _groupService.getGroupMembers(group['id']);
+        List<dynamic> members = await _groupService.getGroupMembers(
+            group['id']);
         if (members.any((member) => member['id'] == userId)) {
           isInGroup = true;
           userGroupId = group['id'];
@@ -119,6 +124,7 @@ class _UserDashboardState extends State<UserDashboard> {
                     _upcomingEvents[index]['name'],
                     _upcomingEvents[index]['date'],
                     _upcomingEvents[index]['location'],
+                    _upcomingEvents[index],
                   );
                 },
               ),
@@ -149,13 +155,21 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   // Event Card Widget
-  Widget _buildEventCard(String eventName, String dateTime, String location) {
+  Widget _buildEventCard(String eventName, String dateTime, String location, Map<String, dynamic> event) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         title: Text(eventName, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text("$dateTime • $location"),
         leading: const Icon(Icons.event, color: Colors.blue),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EventDetails(event: event),
+            ),
+          );
+        },
       ),
     );
   }

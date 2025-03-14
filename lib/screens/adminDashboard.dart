@@ -4,6 +4,8 @@ import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'adminEventList.dart';
+
 class AdminDashboard extends StatefulWidget {
   final String groupId;
 
@@ -91,10 +93,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to Add member Screen
-          _addMember('newMemberId'); // Replace 'newMemberId' with actual member ID
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminEventList(groupId: 'yourGroupId'), // Replace 'yourGroupId' with actual group ID
+            ),
+          );
         },
-        child: const Icon(Icons.person_add_alt_1),
+        child: const Icon(Icons.event),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [

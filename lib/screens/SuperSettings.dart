@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:church_app/screens/assignAdmin.dart';
-
+import 'adminEventList.dart';
 
 class SuperSettings extends StatefulWidget {
   const SuperSettings({super.key});
@@ -171,15 +170,6 @@ class _SuperSettingsState extends State<SuperSettings> {
     });
   }
 
-  void _navigateToAssignAdminScreen(String groupId, String groupName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AssignGroupAdminScreen(groupId: groupId, groupName: groupName),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,18 +197,17 @@ class _SuperSettingsState extends State<SuperSettings> {
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
               child: ListTile(
                 title: Text(group['name']),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () => _navigateToAssignAdminScreen(group['id'], group['name']),
-                      icon: Icon(Icons.person_add, color: Colors.blue),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AdminEventList(groupId: group['id']),
                     ),
-                    IconButton(
-                      onPressed: () => _showDeleteGroupDialog(group['id'], group['name']),
-                      icon: Icon(Icons.delete, color: Colors.red),
-                    ),
-                  ],
+                  );
+                },
+                trailing: IconButton(
+                  onPressed: () => _showDeleteGroupDialog(group['id'], group['name']),
+                  icon: Icon(Icons.delete, color: Colors.red),
                 ),
               ),
             );
