@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/userServices.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -23,6 +22,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _next_of_kin;
   String? _next_of_kin_contact;
 
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     setState(() {
@@ -34,19 +35,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _fetchUserInfo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('auth_token');
-    if (token == null) return;
+    String? userId = prefs.getString('user_id');
+    if (userId == null) return;
 
-    final response = await http.get(
-      Uri.parse('http://your-backend-url.com/api/user/profile'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+    try {
+      final data = await _userService.getUserById(userId);
       setState(() {
         _full_name = data['full_name'];
         _email = data['email'];
@@ -58,8 +51,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         // Assuming the image URL is returned in the response
         _image = File(data['profile_picture']);
       });
-    } else {
-      print('Failed to fetch user info: ${response.body}');
+    } catch (e) {
+      print('Failed to fetch user info: $e');
     }
   }
 
@@ -91,7 +84,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _buildInfoRow("Name", _full_name),
             _buildInfoRow("Email", _email),
             _buildInfoRow("Role", _role),
-            _buildInfoRow("gender", _gender),
+            _buildInfoRow("Gender", _gender),
             _buildInfoRow("Location", _location),
             _buildInfoRow("Next of Kin", _next_of_kin),
             _buildInfoRow("Next of Kin Contact", _next_of_kin_contact),

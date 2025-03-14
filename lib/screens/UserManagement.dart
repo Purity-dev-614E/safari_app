@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/super_services.dart';
+import 'package:church_app/services/userServices.dart';
+import 'package:church_app/services/groupServices.dart';
 
 class User {
   final String id;
@@ -29,6 +30,9 @@ class _UserManagementState extends State<UserManagement> {
   List<dynamic> groups = [];
   String searchQuery = '';
 
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+
   @override
   void initState() {
     super.initState();
@@ -36,18 +40,22 @@ class _UserManagementState extends State<UserManagement> {
   }
 
   Future<void> _fetchData() async {
-    List<dynamic> userData = await AdminServices.getAllUsers();
-    List<dynamic> groupData = await AdminServices.getAllGroups();
-    setState(() {
-      users = userData.map((data) => User(
-        id: data['id'],
-        name: data['name'],
-        email: data['email'],
-        role: data['role'],
-        group: data['group'] ?? '',
-      )).toList();
-      groups = groupData;
-    });
+    try {
+      List<dynamic> userData = await _userService.getAllUsers();
+      List<dynamic> groupData = await _groupService.getAllGroups();
+      setState(() {
+        users = userData.map((data) => User(
+          id: data['id'],
+          name: data['name'],
+          email: data['email'],
+          role: data['role'],
+          group: data['group'] ?? '',
+        )).toList();
+        groups = groupData;
+      });
+    } catch (e) {
+      print('Failed to fetch data: $e');
+    }
   }
 
   List<User> get filteredUsers {
@@ -67,15 +75,15 @@ class _UserManagementState extends State<UserManagement> {
   }
 
   Future<void> _onDeleteUser(User user) async {
-    bool success = await AdminServices.deleteUser(user.id);
-    if (success) {
+    try {
+      await _userService.deleteUser(user.id);
       setState(() {
         users.remove(user);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("User ${user.name} deleted")),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to delete user ${user.name}")),
       );
@@ -83,8 +91,8 @@ class _UserManagementState extends State<UserManagement> {
   }
 
   Future<void> _onAssignGroup(User user, String newGroup) async {
-    bool success = await AdminServices.assignUserToGroup(user.id, newGroup);
-    if (success) {
+    try {
+      await _groupService.addGroupMember(newGroup, user.id);
       setState(() {
         int index = users.indexOf(user);
         users[index] = User(
@@ -98,7 +106,7 @@ class _UserManagementState extends State<UserManagement> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("${user.name} assigned to $newGroup")),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to assign ${user.name} to $newGroup")),
       );
@@ -185,11 +193,11 @@ class _UserManagementState extends State<UserManagement> {
           ),
         ],
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _onAddUser,
-      //   tooltip: "Add User",
-      //   child: const Icon(Icons.add),
-      // ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _onAddUser,
+        tooltip: "Add User",
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

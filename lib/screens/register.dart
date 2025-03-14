@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/authServices.dart'; // Import the AuthService
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class Signup extends StatefulWidget {
+  const Signup({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<Signup> createState() => _SignupState();
 }
 
-class _LoginState extends State<Login> {
+class _SignupState extends State<Signup> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
   final AuthService authService = AuthService(baseUrl: 'https://yourapi.com');  // Initialize AuthService with your base URL
 
-  Future<void> _login() async {
+  Future<void> _signup() async {
     setState(() {
       isLoading = true;
     });
@@ -25,7 +25,7 @@ class _LoginState extends State<Login> {
     final password = passwordController.text;
 
     try {
-      final response = await authService.logIn(email, password);
+      final response = await authService.signUp(email, password);
 
       setState(() {
         isLoading = false;
@@ -38,30 +38,7 @@ class _LoginState extends State<Login> {
         await prefs.setString('full_name', response['full_name']);
         await prefs.setString('email', response['email']);
 
-        Map<String, dynamic> userInfo = {
-          'loggedIn': true,
-          'role': response['role'],
-          'profileComplete': response['full_name'] != null && response['email'] != null,
-        };
-
-        // Navigate based on role
-        if (!userInfo['profileComplete']) {
-          Navigator.pushReplacementNamed(context, '/updateProfile');
-        } else {
-          switch (userInfo['role']) {
-            case 'super_admin':
-              Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
-              break;
-            case 'admin':
-              Navigator.pushReplacementNamed(context, '/adminDashboard');
-              break;
-            case 'user':
-              Navigator.pushReplacementNamed(context, '/userDashboard');
-              break;
-            default:
-              Navigator.pushReplacementNamed(context, '/login');
-          }
-        }
+        Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
       setState(() {
@@ -69,7 +46,7 @@ class _LoginState extends State<Login> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: ${e.toString()}')),
+        SnackBar(content: Text('Signup failed: ${e.toString()}')),
       );
     }
   }
@@ -86,7 +63,7 @@ class _LoginState extends State<Login> {
             children: [
               Center(
                 child: Text(
-                  'Welcome to Church',
+                  'Sign Up to Church',
                   style: TextStyle(
                     fontSize: 45.0,
                     fontWeight: FontWeight.bold,
@@ -141,9 +118,9 @@ class _LoginState extends State<Login> {
               )
                   : Center(
                 child: TextButton(
-                  onPressed: _login,
+                  onPressed: _signup,
                   child: const Text(
-                    'LOGIN',
+                    'SIGN UP',
                     style: TextStyle(
                       fontSize: 15.0,
                       fontWeight: FontWeight.w300,
@@ -154,9 +131,9 @@ class _LoginState extends State<Login> {
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, "/register");
+                  Navigator.pushReplacementNamed(context, "/login");
                 },
-                child: const Text('No account? Sign Up'),
+                child: const Text('Already have an account? Log In'),
               ),
             ],
           ),

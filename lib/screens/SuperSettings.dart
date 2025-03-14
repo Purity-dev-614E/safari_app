@@ -1,36 +1,79 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/super_services.dart';
+import 'package:church_app/services/groupServices.dart';
+import 'package:church_app/services/userServices.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Supersettings extends StatefulWidget {
-  const Supersettings({super.key});
+class SuperSettings extends StatefulWidget {
+  const SuperSettings({super.key});
 
   @override
-  State<Supersettings> createState() => _SupersettingsState();
+  State<SuperSettings> createState() => _SuperSettingsState();
 }
 
-class _SupersettingsState extends State<Supersettings> {
+class _SuperSettingsState extends State<SuperSettings> {
   List<dynamic> groups = [];
   bool allowProfileEdits = true;
+  String? superAdminUserId;
+
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
 
   @override
   void initState() {
     super.initState();
+    _fetchSuperAdminUserId();
     _fetchGroups();
   }
 
-  Future<void> _fetchGroups() async {
-    List<dynamic> groupData = await AdminServices.getAllGroups();
+  Future<void> _fetchSuperAdminUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      groups = groupData;
+      superAdminUserId = prefs.getString('user_id');
     });
   }
 
+  Future<bool> _isSuperAdmin() async {
+    if (superAdminUserId == null) return false;
+    try {
+      Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
+      return userDetails['role'] == 'super_admin';
+    } catch (e) {
+      print('Failed to fetch user details: $e');
+      return false;
+    }
+  }
+
+  Future<void> _fetchGroups() async {
+    if (!await _isSuperAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to view this page')),
+      );
+      return;
+    }
+
+    try {
+      List<dynamic> groupData = await _groupService.getAllGroups();
+      setState(() {
+        groups = groupData;
+      });
+    } catch (e) {
+      print('Failed to fetch groups: $e');
+    }
+  }
+
   Future<void> _createGroup(String groupName) async {
-    bool success = await AdminServices.createGroup(groupName);
-    if (success) {
+    if (!await _isSuperAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to create groups')),
+      );
+      return;
+    }
+
+    try {
+      await _groupService.createGroup({'name': groupName});
       _fetchGroups();
       Navigator.pop(context);
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to create group')),
       );
@@ -38,10 +81,17 @@ class _SupersettingsState extends State<Supersettings> {
   }
 
   Future<void> _deleteGroup(String groupId) async {
-    bool success = await AdminServices.deleteGroup(groupId);
-    if (success) {
+    if (!await _isSuperAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to delete groups')),
+      );
+      return;
+    }
+
+    try {
+      await _groupService.deleteGroup(groupId);
       _fetchGroups();
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete group')),
       );
@@ -106,9 +156,16 @@ class _SupersettingsState extends State<Supersettings> {
     );
   }
 
-  void _toggleProfileEdits(bool value) {
+  Future<void> _toggleProfileEdits(bool value) async {
+    if (!await _isSuperAdmin()) {
+    ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('You do not have permission to change this setting')),
+    );
+    return;
+    }
+
     setState(() {
-      allowProfileEdits = value;
+    allowProfileEdits = value;
     });
   }
 

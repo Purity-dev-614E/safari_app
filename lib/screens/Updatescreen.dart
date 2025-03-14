@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../services/userServices.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});
@@ -20,20 +19,17 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _nextOfKin;
   String? _nextOfKinContact;
 
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('auth_token');
-      if (token == null) return;
+      String? userId = prefs.getString('user_id');
+      if (userId == null) return;
 
-      final response = await http.put(
-        Uri.parse('http://your-backend-url.com/api/user/profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
+      try {
+        final response = await _userService.updateUser(userId, {
           'full_name': _fullName,
           'email': _email,
           'role': _role,
@@ -41,16 +37,14 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           'location': _location,
           'next_of_kin': _nextOfKin,
           'next_of_kin_contact': _nextOfKinContact,
-        }),
-      );
+        });
 
-      if (response.statusCode == 200) {
         await prefs.setString('full_name', _fullName!);
         await prefs.setString('email', _email!);
         await prefs.setString('user_role', _role!);
         Navigator.pushReplacementNamed(context, '/');
-      } else {
-        print('Failed to update profile: ${response.body}');
+      } catch (e) {
+        print('Failed to update profile: $e');
       }
     }
   }

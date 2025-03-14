@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/admin_services.dart';
+import 'package:church_app/services/groupServices.dart';
+import 'package:church_app/services/eventService.dart';
+import 'package:church_app/services/userServices.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -12,34 +15,119 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String groupName = '';
   int numberOfMembers = 0;
   int numberOfUpcomingEvents = 0;
+  String? adminUserId;
+
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
+    _fetchAdminUserId();
+    _promptForGroupName();
   }
 
-  Future<void> _fetchDashboardData() async {
-    // Fetch group name and members
-    List<dynamic> members = await AdminServices.getGroupMembers('groupId'); // Replace 'groupId' with actual group ID
-    Map<String, dynamic> groupDetails = await AdminServices.getGroupDetails('groupId'); // Replace 'groupId' with actual group ID
-    List<dynamic> events = await AdminServices.getUpcomingEvents('groupId'); // Replace 'groupId' with actual group ID
-
+  Future<void> _fetchAdminUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      groupName = groupDetails['name'];
-      numberOfMembers = members.length;
-      numberOfUpcomingEvents = events.length;
+      adminUserId = prefs.getString('user_id');
     });
   }
 
+  Future<String?> _fetchGroupId(String groupName) async {
+    try {
+      List<dynamic> groups = await _groupService.getAllGroups();
+      for (var group in groups) {
+        if (group['name'] == groupName && await _isAdminOfGroup(group['id'])) {
+          return group['id'];
+        }
+      }
+    } catch (e) {
+      print('Failed to fetch group ID: $e');
+    }
+    return null;
+  }
+
+  Future<bool> _isAdminOfGroup(String groupId) async {
+    if (adminUserId == null) return false;
+    try {
+      Map<String, dynamic> userDetails = await _userService.getUserById(adminUserId!);
+      return userDetails['role'] == 'admin';
+    } catch (e) {
+      print('Failed to fetch user details: $e');
+      return false;
+    }
+  }
+
+  Future<void> _promptForGroupName() async {
+    String? enteredGroupName = await _showGroupNameDialog();
+    if (enteredGroupName != null) {
+      _fetchDashboardData(enteredGroupName);
+    }
+  }
+
+  Future<String?> _showGroupNameDialog() async {
+    String? groupName;
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enter Group Name'),
+          content: TextField(
+            onChanged: (value) {
+              groupName = value;
+            },
+            decoration: InputDecoration(hintText: "Group Name"),
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(groupName);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchDashboardData(String groupName) async {
+    String? groupId = await _fetchGroupId(groupName);
+    if (groupId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You are not an admin of this group')),
+      );
+      return;
+    }
+
+    try {
+      List<dynamic> members = await _groupService.getGroupMembers(groupId);
+      Map<String, dynamic> groupDetails = await _groupService.getGroupById(groupId);
+      List<dynamic> events = await _eventService.getEventsByGroup(groupId);
+
+      setState(() {
+        this.groupName = groupDetails['name'];
+        numberOfMembers = members.length;
+        numberOfUpcomingEvents = events.length;
+      });
+    } catch (e) {
+      print('Failed to fetch dashboard data: $e');
+    }
+  }
+
   Future<void> _addMember(String memberId) async {
-    bool success = await AdminServices.addMemberToGroup('groupId', memberId); // Replace 'groupId' with actual group ID
-    if (success) {
-      _fetchDashboardData();
+    String? groupId = await _fetchGroupId(groupName);
+    if (groupId == null) return;
+
+    try {
+      await _groupService.addGroupMember(groupId, memberId);
+      _fetchDashboardData(groupName);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member added successfully')),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add member')),
       );

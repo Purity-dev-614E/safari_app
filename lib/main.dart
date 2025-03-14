@@ -6,6 +6,7 @@ import 'package:church_app/screens/SuperSettings.dart';
 import 'package:church_app/screens/Updatescreen.dart';
 import 'package:church_app/screens/UserManagement.dart';
 import 'package:church_app/screens/adminDashboard.dart';
+import 'package:church_app/screens/register.dart';
 import 'package:church_app/screens/super_admin_dashoard.dart';
 import 'package:church_app/screens/userDashboard.dart';
 import 'package:flutter/material.dart';
@@ -63,17 +64,17 @@ class MyApp extends StatelessWidget {
       home: home,
       routes: {
         '/login': (context) => Login(),
-        '/register': (context) => Register(),
+        '/register': (context) => Signup(),
         '/super_admin_dashboard': (context) => SuperAdminDashboard(),
         '/adminDashboard': (context) => AdminDashboard(),
         '/UserManagement': (context) => UserManagement(),
-        '/SuperAnalytics': (context) => Superanalytics(),
-        '/SuperSettings': (context) => Supersettings(),
+        '/SuperAnalytics': (context) => SuperAnalytics(),
+        '/SuperSettings': (context) => SuperSettings(),
         '/GroupMembers': (context) => GroupMembers(),
-        '/GroupAnalytics': (context) => Groupanalytics(),
+        '/GroupAnalytics': (context) => GroupAnalytics(),
         '/userDashboard': (context) => UserDashboard(),
         '/Profile': (context) => UserProfileScreen(),
-        '/CreateGroup': (context) => CreateGroupScreen()
+
       },
     );
   }

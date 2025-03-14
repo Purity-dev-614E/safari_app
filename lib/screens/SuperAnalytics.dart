@@ -1,37 +1,78 @@
+import 'package:church_app/services/userServices.dart';
 import 'package:flutter/material.dart';
-import 'package:church_app/services/super_services.dart';
+import 'package:church_app/services/analyticsService.dart';
+import 'package:church_app/services/groupServices.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 
-class Superanalytics extends StatefulWidget {
-  const Superanalytics({super.key});
+class SuperAnalytics extends StatefulWidget {
+  const SuperAnalytics({super.key});
 
   @override
-  State<Superanalytics> createState() => _SuperanalyticsState();
+  State<SuperAnalytics> createState() => _SuperAnalyticsState();
 }
 
-class _SuperanalyticsState extends State<Superanalytics> {
-  String selectedWeek = 'Week 1';
-  String selectedMonth = 'January';
-  String selectedYear = "2025";
-  Map<String, dynamic>? analyticsData;
+class _SuperAnalyticsState extends State<SuperAnalytics> {
+  String selectedTimePeriod = 'week';
+  Map<String, dynamic>? attendanceData;
+  List<dynamic>? groupDemographics;
+  List<dynamic>? groups;
+  String? superAdminUserId;
 
-  final List<String> weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-  final List<String> months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  final List<String> years = ['2024', '2025'];
-
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'http://your-back');
   @override
   void initState() {
     super.initState();
+    _fetchSuperAdminUserId();
+  }
+
+  Future<void> _fetchSuperAdminUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      superAdminUserId = prefs.getString('user_id');
+    });
     _fetchAnalytics();
   }
 
+  Future<bool> _isSuperAdmin() async {
+    if (superAdminUserId == null) return false;
+    try {
+      Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
+      return userDetails['role'] == 'super_admin';
+    } catch (e) {
+      print('Failed to fetch user details: $e');
+      return false;
+    }
+  }
+
   Future<void> _fetchAnalytics() async {
-    Map<String, dynamic>? data = await AdminServices.getAnalytics();
-    setState(() {
-      analyticsData = data;
-    });
+    if (!await _isSuperAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to view this page')),
+      );
+      return;
+    }
+
+    try {
+      // Fetch groups
+      List<dynamic> fetchedGroups = await _groupService.getAllGroups();
+
+      // Fetch attendance data for the selected time period
+      Map<String, dynamic>? fetchedAttendanceData = await _analyticsService.getAttendanceByTimePeriod(selectedTimePeriod);
+
+      // Fetch group demographics
+      List<dynamic>? fetchedGroupDemographics = await _analyticsService.getGroupDemographics();
+
+      setState(() {
+        groups = fetchedGroups;
+        attendanceData = fetchedAttendanceData;
+        groupDemographics = fetchedGroupDemographics;
+      });
+    } catch (e) {
+      print('Failed to fetch analytics data: $e');
+    }
   }
 
   @override
@@ -46,88 +87,33 @@ class _SuperanalyticsState extends State<Superanalytics> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Filtered by Time',
+              'Select Time Period',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8.0),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedWeek,
-                    decoration: InputDecoration(
-                      labelText: 'Week',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: weeks.map((String week) {
-                      return DropdownMenuItem<String>(
-                        value: week,
-                        child: Text(week),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedWeek = value;
-                        });
-                      }
-                    },
-                  ),
+            DropdownButtonFormField<String>(
+              value: selectedTimePeriod,
+              decoration: InputDecoration(
+                labelText: 'Time Period',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedMonth,
-                    decoration: InputDecoration(
-                      labelText: "Month",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: months.map((String month) {
-                      return DropdownMenuItem<String>(
-                        value: month,
-                        child: Text(month),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedMonth = value;
-                        });
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedYear,
-                    decoration: InputDecoration(
-                      labelText: "Year",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: years.map((String year) {
-                      return DropdownMenuItem<String>(
-                        value: year,
-                        child: Text(year),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedYear = value;
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ],
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: ['week', 'month', 'year'].map((String period) {
+                return DropdownMenuItem<String>(
+                  value: period,
+                  child: Text(period),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    selectedTimePeriod = value;
+                    _fetchAnalytics();
+                  });
+                }
+              },
             ),
             const SizedBox(height: 8),
             const Text(
@@ -142,20 +128,24 @@ class _SuperanalyticsState extends State<Superanalytics> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12.0),
               ),
-              child: Center(
-                child: Text(
-                  analyticsData != null
-                      ? 'Line Chart for Attendance Trends: ${analyticsData!['attendance_trends']}'
-                      : 'Loading...',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ),
+              child: attendanceData != null
+                  ? LineChart(LineChartData(
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: (attendanceData!['attendance_trends'] as List<dynamic>)
+                        .map((data) => FlSpot(data['time'].toDouble(), data['count'].toDouble()))
+                        .toList(),
+                  ),
+                ],
+              ))
+                  : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
             ),
             const SizedBox(height: 8),
             const Text(
-              "Group Comparison",
+              "Group Demographics",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
             Container(
               height: 200,
               width: double.infinity,
@@ -163,14 +153,17 @@ class _SuperanalyticsState extends State<Superanalytics> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12.0),
               ),
-              child: Center(
-                child: Text(
-                  analyticsData != null
-                      ? 'Bar Chart for Group Comparison: ${analyticsData!['group_comparison']}'
-                      : 'Loading...',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ),
+              child: groupDemographics != null
+                  ? PieChart(PieChartData(
+                sections: groupDemographics!.map<PieChartSectionData>((data) {
+                  return PieChartSectionData(
+                    value: data['value'],
+                    color: Color(int.parse(data['color'])),
+                    title: '${data['value']}%',
+                  );
+                }).toList(),
+              ))
+                  : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
             ),
           ],
         ),

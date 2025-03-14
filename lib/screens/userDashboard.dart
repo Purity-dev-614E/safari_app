@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/user_services.dart';
+import 'package:church_app/services/eventService.dart';
+import 'package:church_app/services/groupServices.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/userServices.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -13,6 +16,10 @@ class _UserDashboardState extends State<UserDashboard> {
   String _nextEvent = "";
   List<dynamic> _upcomingEvents = [];
 
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+
   @override
   void initState() {
     super.initState();
@@ -20,20 +27,45 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Future<void> _fetchDashboardData() async {
-    // Fetch total number of group members
-    List<dynamic> groups = await UserServices.getUserGroups();
-    setState(() {
-      _totalMembers = groups.length;
-    });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('user_id');
+    if (userId == null) return;
 
-    // Fetch upcoming events
-    List<dynamic> events = await UserServices.getEvents();
-    setState(() {
-      _upcomingEvents = events;
-      if (events.isNotEmpty) {
-        _nextEvent = events[0]['name'];
+    try {
+      // Check if user is in a group
+      List<dynamic> groups = await _groupService.getAllGroups();
+      bool isInGroup = false;
+      String? userGroupId;
+
+      for (var group in groups) {
+        List<dynamic> members = await _groupService.getGroupMembers(group['id']);
+        if (members.any((member) => member['id'] == userId)) {
+          isInGroup = true;
+          userGroupId = group['id'];
+          _totalMembers = members.length;
+          break;
+        }
       }
-    });
+
+      // Fetch upcoming events
+      List<dynamic> events;
+      if (isInGroup && userGroupId != null) {
+        events = await _eventService.getEventsByGroup(userGroupId);
+      } else {
+        events = await _eventService.getAllEvents();
+        List<dynamic> users = await _userService.getAllUsers();
+        _totalMembers = users.length;
+      }
+
+      setState(() {
+        _upcomingEvents = events;
+        if (events.isNotEmpty) {
+          _nextEvent = events[0]['name'];
+        }
+      });
+    } catch (e) {
+      print('Failed to fetch dashboard data: $e');
+    }
   }
 
   @override

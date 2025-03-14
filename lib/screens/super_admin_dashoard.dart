@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/super_services.dart';
+import 'package:church_app/services/groupServices.dart';
+import 'package:church_app/services/userServices.dart';
+import 'package:church_app/services/analyticsService.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -12,23 +15,104 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   int _totalUsers = 0;
   int _totalGroups = 0;
   Map<String, dynamic>? _analytics;
+  String? superAdminUserId;
+
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'http://your-backend-url.com/api');
 
   @override
   void initState() {
     super.initState();
+    _fetchSuperAdminUserId();
+  }
+
+  Future<void> _fetchSuperAdminUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      superAdminUserId = prefs.getString('user_id');
+    });
     _fetchDashboardData();
   }
 
-  Future<void> _fetchDashboardData() async {
-    List<dynamic> users = await AdminServices.getAllUsers();
-    List<dynamic> groups = await AdminServices.getAllGroups();
-    Map<String, dynamic>? analytics = await AdminServices.getAnalytics();
+  Future<bool> _isSuperAdmin() async {
+    if (superAdminUserId == null) return false;
+    try {
+      Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
+      return userDetails['role'] == 'super_admin';
+    } catch (e) {
+      print('Failed to fetch user details: $e');
+      return false;
+    }
+  }
 
-    setState(() {
-      _totalUsers = users.length;
-      _totalGroups = groups.length;
-      _analytics = analytics;
-    });
+  Future<void> _fetchDashboardData() async {
+    if (!await _isSuperAdmin()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You do not have permission to view this page')),
+      );
+      return;
+    }
+
+    try {
+      List<dynamic> users = await _userService.getAllUsers();
+      List<dynamic> groups = await _groupService.getAllGroups();
+      // Fetch analytics data
+      String groupName = await _promptForGroupName(); // Prompt for group name
+      String? groupId = await _fetchGroupId(groupName); // Fetch group ID
+      if (groupId != null) {
+        Map<String, dynamic>? analytics = (await _analyticsService.getGroupMembers(groupId)) as Map<String, dynamic>?;
+
+        setState(() {
+          _totalUsers = users.length;
+          _totalGroups = groups.length;
+          _analytics = analytics;
+        });
+      }
+    } catch (e) {
+      print('Failed to fetch dashboard data: $e');
+    }
+  }
+
+  Future<String?> _fetchGroupId(String groupName) async {
+    try {
+      List<dynamic> groups = await _groupService.getAllGroups();
+      for (var group in groups) {
+        if (group['name'] == groupName) {
+          return group['id'];
+        }
+      }
+    } catch (e) {
+      print('Failed to fetch group ID: $e');
+    }
+    return null;
+  }
+
+  Future<String> _promptForGroupName() async {
+    String groupName = '';
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Enter Group Name'),
+          content: TextField(
+            onChanged: (value) {
+              groupName = value;
+            },
+            decoration: InputDecoration(hintText: "Group Name"),
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return groupName;
   }
 
   Widget _buildSummaryCard({
@@ -132,8 +216,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                   _buildQuickActionButton(
                     label: "Create Group",
                     icon: Icons.add,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/CreateGroup');
+                    onPressed: ()
+                    {
+                      _promptForGroupName();
                     }, // Navigate to create group form
                   ),
                 ],
@@ -208,68 +293,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-
-class CreateGroupScreen extends StatefulWidget {
-  const CreateGroupScreen({super.key});
-
-  @override
-  _CreateGroupScreenState createState() => _CreateGroupScreenState();
-}
-
-class _CreateGroupScreenState extends State<CreateGroupScreen> {
-  final _formKey = GlobalKey<FormState>();
-  String? _groupName;
-
-  Future<void> _createGroup() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      bool success = await AdminServices.createGroup(_groupName!);
-      if (success) {
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create group')),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Create Group")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: "Group Name",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter group name';
-                  }
-                  return null;
-                },
-                onSaved: (value) => _groupName = value,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _createGroup,
-                child: const Text("Create Group"),
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:church_app/services/admin_services.dart';
+import 'package:church_app/services/groupServices.dart';
 
 class GroupMembers extends StatefulWidget {
   const GroupMembers({super.key});
@@ -12,6 +12,8 @@ class _GroupMembersState extends State<GroupMembers> {
   List<dynamic> members = [];
   String searchQuery = "";
 
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+
   @override
   void initState() {
     super.initState();
@@ -19,20 +21,24 @@ class _GroupMembersState extends State<GroupMembers> {
   }
 
   Future<void> _fetchGroupMembers() async {
-    List<dynamic> fetchedMembers = await AdminServices.getGroupMembers('groupId'); // Replace 'groupId' with actual group ID
-    setState(() {
-      members = fetchedMembers;
-    });
+    try {
+      List<dynamic> fetchedMembers = await _groupService.getGroupMembers('groupId'); // Replace 'groupId' with actual group ID
+      setState(() {
+        members = fetchedMembers;
+      });
+    } catch (e) {
+      print('Failed to fetch group members: $e');
+    }
   }
 
   Future<void> _deleteMember(String memberId) async {
-    bool success = await AdminServices.removeMember('groupId', memberId); // Replace 'groupId' with actual group ID
-    if (success) {
+    try {
+      await _groupService.removeGroupMember('groupId', memberId); // Replace 'groupId' with actual group ID
       _fetchGroupMembers();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member deleted successfully')),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to delete member')),
       );
@@ -167,16 +173,18 @@ class AddMemberScreen extends StatefulWidget {
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
   final TextEditingController _memberIdController = TextEditingController();
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
 
   Future<void> _addMember() async {
-    String memberId = _memberIdController.text;
-    bool success = await AdminServices.addMemberToGroup('groupId', memberId); // Replace 'groupId' with actual group ID
-    if (success) {
+    try {
+      String memberId = _memberIdController.text;
+
+      await _groupService.addGroupMember('groupId', memberId); // Replace 'groupId' with actual group ID
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member added successfully')),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add member')),
       );
@@ -228,6 +236,8 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _roleController = TextEditingController();
 
+  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+
   @override
   void initState() {
     super.initState();
@@ -235,31 +245,35 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   }
 
   Future<void> _fetchMemberDetails() async {
-    // Fetch member details and populate the controllers
-    // This is a placeholder implementation
-    Map<String, dynamic> memberDetails = await AdminServices.getMemberDetails(widget.memberId);
-    setState(() {
-      _nameController.text = memberDetails['name'];
-      _emailController.text = memberDetails['email'];
-      _roleController.text = memberDetails['role'];
-    });
+    try {
+      // Fetch member details and populate the controllers
+      Map<String, dynamic> memberDetails = await _groupService.getGroupById(widget.memberId);
+      setState(() {
+        _nameController.text = memberDetails['name'];
+        _emailController.text = memberDetails['email'];
+        _roleController.text = memberDetails['role'];
+      });
+    } catch (e) {
+      print('Failed to fetch member details: $e');
+    }
   }
 
   Future<void> _updateMember() async {
-    // Update member details
-    // This is a placeholder implementation
-    bool success = await AdminServices.updateMemberDetails(
-      widget.memberId,
-      _nameController.text,
-      _emailController.text,
-      _roleController.text,
-    );
-    if (success) {
+    try {
+      // Update member details
+      await _groupService.updateGroup(
+        widget.memberId,
+        {
+          'name': _nameController.text,
+          'email': _emailController.text,
+          'role': _roleController.text,
+        },
+      );
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member updated successfully')),
       );
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update member')),
       );
