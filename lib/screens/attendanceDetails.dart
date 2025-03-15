@@ -13,7 +13,7 @@ class AttendanceDetails extends StatefulWidget {
 
 class _AttendanceDetailsState extends State<AttendanceDetails> {
   final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
   List<dynamic> _attendedMembers = [];
   List<dynamic> _notAttendedMembers = [];
 

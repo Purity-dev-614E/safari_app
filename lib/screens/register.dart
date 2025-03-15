@@ -34,13 +34,13 @@ class _SignupState extends State<Signup> {
         });
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', response['token']);
-        await prefs.setString('user_role', response['role']);
-        await prefs.setString('full_name', response['full_name']);
-        await prefs.setString('email', response['email']);
+        await prefs.setString('auth_token', response['token'] ?? '');
+        await prefs.setString('user_role', response['role'] ?? '');
+        await prefs.setString('full_name', response['full_name'] ?? '');
+        await prefs.setString('email', response['email'] ?? '');
 
         Navigator.pushReplacementNamed(context, '/login');
-            } catch (e) {
+      } catch (e) {
         setState(() {
           isLoading = false;
         });

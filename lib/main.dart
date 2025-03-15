@@ -9,6 +9,8 @@ import 'package:church_app/screens/adminDashboard.dart';
 import 'package:church_app/screens/register.dart';
 import 'package:church_app/screens/super_admin_dashoard.dart';
 import 'package:church_app/screens/userDashboard.dart';
+import 'package:church_app/services/tokenService.dart';
+import 'package:church_app/services/userServices.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/screens/login.dart';
@@ -20,100 +22,66 @@ void main() async {
       url: "https://hubrwunvnuslutyykvli.supabase.co",
       anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1YnJ3dW52bnVzbHV0eXlrdmxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NjE4MzEsImV4cCI6MjA1NzMzNzgzMX0.GEUOfe5OKzBZY5zT-LlhagykiCMMznxCY5pqTwpLhas"
   );
-  Map<String, dynamic> userInfo = await getUserInfo();
-  runApp(MyApp(userInfo: userInfo));
-}
 
-Future<Map<String, dynamic>> getUserInfo() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? token = prefs.getString('auth_token');
-  String? role = prefs.getString('user_role');
-  String? fullName = prefs.getString('full_name');
-  String? email = prefs.getString('email');
-  return {
-    'loggedIn': token != null,
-    'role': role,
-    'profileComplete': fullName != null && email != null,
-  };
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final Map<String, dynamic> userInfo;
-  const MyApp({super.key, required this.userInfo});
+  const MyApp({super.key});
+
+  Future<void> _checkLoginStatus(BuildContext context) async {
+    final UserService userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('user_id');
+    print('The users_id is: $userId');
+
+    if (userId == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Login()),
+      );
+    } else {
+      final userData = await userService.getUserById(userId);
+      // print(userData['full_name']);
+      // print(userData['role']);
+
+      if (userData['role'] != null) {
+        if (userData['role'] == 'user') {
+          Navigator.pushReplacementNamed(context, "/userDashboard");
+        } else if (userData['role'] == 'admin') {
+          Navigator.pushReplacementNamed(context, "/adminDashboard");
+        } else if (userData['role'] == 'super admin') {
+          Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
+        }
+      } else {
+        Navigator.pushReplacementNamed(context, "/updateProfile");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    Widget home;
-    if (!userInfo['loggedIn']) {
-      home = Login();
-    } else if (!userInfo['profileComplete']) {
-      home = UpdateProfileScreen();
-    } else {
-      home = _getHomeScreen(userInfo['role']);
-    }
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: home,
-      onGenerateRoute: (settings) {
-        if (settings.name == '/adminDashboard') {
-          final groupId = settings.arguments as String;
-          return MaterialPageRoute(
-            builder: (context) => AdminDashboard(groupId: groupId),
+      home: Builder(
+        builder: (context) {
+          _checkLoginStatus(context);
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
-        } else if (settings.name == '/GroupAnalytics') {
-          final groupId = settings.arguments as String;
-          return MaterialPageRoute(
-            builder: (context) => GroupAnalytics(groupId: groupId),
-          );
-        } else if (settings.name == '/GroupMembers') {
-          final groupId = settings.arguments as String;
-          return MaterialPageRoute(
-            builder: (context) => GroupMembers(groupId: groupId),
-          );
-        }
-        return null;
-      },
+        },
+      ),
       routes: {
-        '/login': (context) => Login(),
-        '/register': (context) => Signup(),
-        '/super_admin_dashboard': (context) => SuperAdminDashboard(),
-        '/UserManagement': (context) => UserManagement(),
-        '/SuperAnalytics': (context) => SuperAnalytics(),
-        '/SuperSettings': (context) => SuperSettings(),
-        '/userDashboard': (context) => UserDashboard(),
-        '/Profile': (context) => UserProfileScreen(),
-        '/updateProfile': (context) => UpdateProfileScreen()
+        '/login': (context) => const Login(),
+        '/register': (context) => const Signup(),
+        '/super_admin_dashboard': (context) => const SuperAdminDashboard(),
+        '/UserManagement': (context) => const UserManagement(),
+        '/SuperAnalytics': (context) => const SuperAnalytics(),
+        '/SuperSettings': (context) => const SuperSettings(),
+        '/userDashboard': (context) => const UserDashboard(),
+        '/Profile': (context) => const UserProfileScreen(),
+        '/updateProfile': (context) => const UpdateProfileScreen()
       },
     );
   }
-
-  Widget _getHomeScreen(String role) {
-    switch (role) {
-      case 'super_admin':
-        return SuperAdminDashboard();
-      case 'admin':
-        return AdminDashboard(groupId: 'defaultGroupId'); // Provide a default or initial group ID
-      case 'user':
-        return UserDashboard();
-      default:
-        return Login();
-    }
-  }
-}
-
-Future<void> saveToken(String token) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('auth_token', token);
-}
-
-Future<void> logout(BuildContext context) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('auth_token');
-
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => Login()),
-        (route) => false,
-  );
 }

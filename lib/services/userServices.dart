@@ -1,12 +1,49 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  UserService({required this.baseUrl});
+  UserService({required this.baseUrl}) : assert(!baseUrl.endsWith('/'), 'baseUrl should not end with a slash');
+
+  Future<String> uploadProfilePicture(File image) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/upload'));
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath('file', image.path));
+
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      final responseData = jsonDecode(responseBody);
+      return responseData['url']; // Assuming the server returns the URL in a field named 'url'
+    } else {
+      throw Exception('Failed to upload image: ${response.reasonPhrase}');
+    }
+  }
+
+  Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.put(
+      Uri.parse('$baseUrl/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update user profile: ${response.body}');
+    }
+  }
+
+
 
   Future<Map<String, dynamic>> getUserById(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
@@ -59,11 +96,18 @@ class UserService {
     }
   }
 
-  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+  Future<Map<String, dynamic>> updateUser(Map<String, dynamic> userData) async {
     final token = await _secureStorage.read(key: 'auth_token');
-    final url =   Uri.parse('$baseUrl/$id');
-    print(url);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('user_id');
 
+    if (userId == null || userId.isEmpty) {
+      throw Exception('User ID not found in SharedPreferences');
+    }
+
+    final url = Uri.parse('$baseUrl/$userId');
+    print('PUT URL: $url');
+    print('User Data: $userData');
 
     final response = await http.put(
       url,
@@ -80,6 +124,7 @@ class UserService {
       throw Exception('Failed to update user: ${response.body}');
     }
   }
+
 
   Future<void> deleteUser(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');

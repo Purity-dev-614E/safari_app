@@ -46,13 +46,13 @@ class _UserManagementState extends State<UserManagement> {
       List<dynamic> groupData = await _groupService.getAllGroups();
       setState(() {
         users = userData.map((data) => User(
-          id: data['id'],
-          name: data['name'],
-          email: data['email'],
-          role: data['role'],
+          id: data['id'] ?? '',
+          name: data['name'] ?? '',
+          email: data['email'] ?? '',
+          role: data['role'] ?? '',
           group: data['group'] ?? '',
         )).toList();
-        groups = groupData;
+        groups = groupData ?? [];
         _isLoading = false;
       });
     } catch (e) {
@@ -71,8 +71,6 @@ class _UserManagementState extends State<UserManagement> {
           user.email.toLowerCase().contains(lowerCaseQuery);
     }).toList();
   }
-
-
 
   Future<void> _onDeleteUser(User user) async {
     try {
@@ -112,7 +110,6 @@ class _UserManagementState extends State<UserManagement> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +181,6 @@ class _UserManagementState extends State<UserManagement> {
           ),
         ],
       ),
-
     );
   }
 }

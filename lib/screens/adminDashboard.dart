@@ -23,7 +23,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   @override
   void initState() {
@@ -55,6 +55,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (e) {
       print('Failed to fetch dashboard data: $e');
     }
+  }
+
+  Future<String> _promptForGroupName() async {
+    String groupName = '';
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Enter Group Name'),
+          content: TextField(
+            onChanged: (value) {
+              groupName = value;
+            },
+            decoration: InputDecoration(hintText: "Group Name"),
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return groupName;
   }
 
   @override

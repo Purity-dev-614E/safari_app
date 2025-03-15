@@ -22,7 +22,7 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
 
   final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   @override
   void initState() {

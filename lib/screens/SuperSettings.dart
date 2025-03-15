@@ -55,7 +55,7 @@ class _SuperSettingsState extends State<SuperSettings> {
     try {
       List<dynamic> groupData = await _groupService.getAllGroups();
       setState(() {
-        groups = groupData;
+        groups = groupData ?? [];
       });
     } catch (e) {
       print('Failed to fetch groups: $e');
@@ -196,22 +196,22 @@ class _SuperSettingsState extends State<SuperSettings> {
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
               child: ListTile(
-                title: Text(group['name']),
+                title: Text(group['name'] ?? ''),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AdminEventList(groupId: group['id']),
+                      builder: (context) => AdminEventList(groupId: group['id'] ?? ''),
                     ),
                   );
                 },
                 trailing: IconButton(
-                  onPressed: () => _showDeleteGroupDialog(group['id'], group['name']),
+                  onPressed: () => _showDeleteGroupDialog(group['id'] ?? '', group['name'] ?? ''),
                   icon: Icon(Icons.delete, color: Colors.red),
                 ),
               ),
             );
-          }),
+          }).toList(),
           const Divider(height: 32),
           // App permissions section
           SwitchListTile(

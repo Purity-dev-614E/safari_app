@@ -19,7 +19,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   bool _isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
   final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   @override
@@ -57,65 +57,17 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       List<dynamic> users = await _userService.getAllUsers();
       List<dynamic> groups = await _groupService.getAllGroups();
       // Fetch analytics data
-      String groupName = await _promptForGroupName(); // Prompt for group name
-      String? groupId = await _fetchGroupId(groupName); // Fetch group ID
-      if (groupId != null) {
-        Map<String, dynamic>? analytics = (await _analyticsService.getGroupMembers(groupId)) as Map<String, dynamic>?;
-
-        setState(() {
-          _totalUsers = users.length;
-          _totalGroups = groups.length;
-          _analytics = analytics;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _totalUsers = users.length;
+        _totalGroups = groups.length;
+        _isLoading = false;
+      });
     } catch (e) {
       _showError('Failed to fetch dashboard data: $e');
       setState(() {
         _isLoading = false;
       });
     }
-  }
-
-  Future<String?> _fetchGroupId(String groupName) async {
-    try {
-      List<dynamic> groups = await _groupService.getAllGroups();
-      for (var group in groups) {
-        if (group['name'] == groupName) {
-          return group['id'];
-        }
-      }
-    } catch (e) {
-      _showError('Failed to fetch group ID: $e');
-    }
-    return null;
-  }
-
-  Future<String> _promptForGroupName() async {
-    String groupName = '';
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Enter Group Name'),
-          content: TextField(
-            onChanged: (value) {
-              groupName = value;
-            },
-            decoration: InputDecoration(hintText: "Group Name"),
-          ),
-          actions: <Widget>[
-            ElevatedButton(
-              child: Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return groupName;
   }
 
   void _showError(String message) {
@@ -228,7 +180,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     label: "Create Group",
                     icon: Icons.add,
                     onPressed: () {
-                      _promptForGroupName();
+                      Navigator.pushNamed(context, '/CreateGroup');
                     }, // Navigate to create group form
                   ),
                 ],

@@ -19,18 +19,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _gender;
   String? _role;
   String? _location;
-  // String? _next_of_kin;
-  // String? _next_of_kin_contact;
+
 
   final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      if (pickedFile != null) {
+    if (pickedFile != null) {
+      setState(() {
         _image = File(pickedFile.path);
+      });
+
+      try {
+        // Upload the image to the server and get the URL
+        final imageUrl = await _userService.uploadProfilePicture(_image!);
+
+        // Update the user's profile with the new profile picture URL
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? userId = prefs.getString('user_id');
+        if (userId != null) {
+          await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+          setState(() {
+            _image = File(imageUrl);
+          });
+        }
+      } catch (e) {
+        print('Failed to upload image: $e');
       }
-    });
+    }
   }
 
   Future<void> _fetchUserInfo() async {
@@ -46,9 +62,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         _role = data['role'];
         _location = data['location'];
         _gender = data['gender'];
-        // _next_of_kin = data['next_of_kin'];
-        // _next_of_kin_contact = data['next_of_kin_contact'];
-        // Assuming the image URL is returned in the response
         _image = File(data['profile_picture']);
       });
     } catch (e) {

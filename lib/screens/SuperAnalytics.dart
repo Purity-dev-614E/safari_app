@@ -66,9 +66,9 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       List<dynamic>? fetchedGroupDemographics = await _analyticsService.getGroupDemographics();
 
       setState(() {
-        groups = fetchedGroups;
-        attendanceData = fetchedAttendanceData;
-        groupDemographics = fetchedGroupDemographics;
+        groups = fetchedGroups ?? [];
+        attendanceData = fetchedAttendanceData ?? {};
+        groupDemographics = fetchedGroupDemographics ?? [];
         _isLoading = false;
       });
     } catch (e) {
@@ -140,12 +140,12 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12.0),
               ),
-              child: attendanceData != null
+              child: attendanceData != null && attendanceData!['attendance_trends'] != null
                   ? LineChart(LineChartData(
                 lineBarsData: [
                   LineChartBarData(
                     spots: (attendanceData!['attendance_trends'] as List<dynamic>)
-                        .map((data) => FlSpot(data['time'].toDouble(), data['count'].toDouble()))
+                        .map((data) => FlSpot((data['time'] as num).toDouble(), (data['count'] as num).toDouble()))
                         .toList(),
                   ),
                 ],
@@ -169,8 +169,8 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
                   ? PieChart(PieChartData(
                 sections: groupDemographics!.map<PieChartSectionData>((data) {
                   return PieChartSectionData(
-                    value: data['value'],
-                    color: Color(int.parse(data['color'])),
+                    value: (data['value'] as num).toDouble(),
+                    color: Color(int.parse(data['color'] ?? '0xffcccccc')),
                     title: '${data['value']}%',
                   );
                 }).toList(),

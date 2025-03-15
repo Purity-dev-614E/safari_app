@@ -15,7 +15,7 @@ class AssignGroupAdminScreen extends StatefulWidget {
 
 class _AssignGroupAdminScreenState extends State<AssignGroupAdminScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   List<dynamic> _searchResults = [];
   bool _isLoading = false;
@@ -52,7 +52,7 @@ class _AssignGroupAdminScreenState extends State<AssignGroupAdminScreen> {
       Map<String, dynamic> userDetails = await _userService.getUserById(userId);
       if (userDetails['role'] != 'admin') {
         // Update user role to admin
-        await _userService.updateUser(userId, {'role': 'admin'});
+        await _userService.updateUser({'role': 'admin'});
       }
       // Assign user as group admin
       await _groupService.assignAdminToGroup(widget.groupId, userId);

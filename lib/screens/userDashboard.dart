@@ -19,7 +19,7 @@ class _UserDashboardState extends State<UserDashboard> {
   bool _isLoading = true;
 
   final UserService _userService = UserService(
-      baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+      baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
   final EventService _eventService = EventService(
       baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final GroupService _groupService = GroupService(
@@ -34,6 +34,7 @@ class _UserDashboardState extends State<UserDashboard> {
   Future<void> _fetchDashboardData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('user_id');
+    print('user id: $userId');
     if (userId == null) return;
 
     try {

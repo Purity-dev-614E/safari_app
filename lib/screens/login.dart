@@ -1,6 +1,8 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/authServices.dart'; // Import the AuthService
+import '../services/authServices.dart';
+import '../services/userServices.dart'; // Import the AuthService
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,8 +16,9 @@ class _LoginState extends State<Login> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');  // Initialize AuthService with your base URL
-
+  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');// Initialize AuthService with your base URL
+  final UserService userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  final storage = const FlutterSecureStorage();
   Future<void> _login() async {
     final email = emailController.text;
     final password = passwordController.text;
@@ -36,39 +39,53 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', response['token'] ?? '');
-      await prefs.setString('user_role', response['role'] ?? '');
-      await prefs.setString('full_name', response['full_name'] ?? '');
-      await prefs.setString('email', response['email'] ?? '');
-      await prefs.setString('user_id', response['id']);
+      // print(response['session']['user']['id']);
 
-      if (response['full_name'] == null || response['full_name'].isEmpty) {
-        Navigator.pushReplacementNamed(context, '/updateProfile');
-      } else {
-        switch (response['role']) {
-          case 'super_admin':
-            Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
-            break;
-          case 'admin':
-            Navigator.pushReplacementNamed(context, '/adminDashboard');
-            break;
-          case 'user':
-            Navigator.pushReplacementNamed(context, '/userDashboard');
-            break;
-          default:
-            Navigator.pushReplacementNamed(context, '/login');
-        }
+      // Extract and store the user ID
+      extractAndStoreUserId(response);
+      final String token = response['session']['access_token']!;
+
+      await storage.write(
+          key: 'auth_token',
+          value: token
+      );
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? userId = await prefs.getString('user_id');
+
+      final userData = await userService.getUserById(userId!);
+      print(userData['full_name']);
+      print(userData['role']);
+
+      if (userData['role'] != null ){
+
+       if(userData['role'] == 'user'){
+           Navigator.pushReplacementNamed(context, "/userDashboard");
+       }else if(userData['role'] == 'admin'){
+           Navigator.pushReplacementNamed(context, "/adminDashboard");
+       }else if(userData['role'] == 'super_admin'){
+           Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
+       }
+      }else {
+        Navigator.pushReplacementNamed(context, "/updateProfile");
       }
-        } catch (e) {
+
+    } catch (e) {
       setState(() {
         isLoading = false;
       });
       print(e);
-
       _showError('Login failed: ${e.toString()}');
     }
   }
+  void extractAndStoreUserId(Map<String, dynamic> response) async {
+    final String userId = response['session']['user']['id']!;
+    // print('Extracted User ID: $userId');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_id', userId);
+  }
+
+
+
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
