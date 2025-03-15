@@ -5,14 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class EventDetails extends StatefulWidget {
   final Map<String, dynamic> event;
 
-  const EventDetails({Key? key, required this.event}) : super(key: key);
+  const EventDetails({super.key, required this.event});
 
   @override
   _EventDetailsState createState() => _EventDetailsState();
 }
 
 class _EventDetailsState extends State<EventDetails> {
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'http://your-backend-url.com/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   String? userId;
 
   @override

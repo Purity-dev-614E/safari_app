@@ -5,15 +5,15 @@ import 'package:church_app/services/userServices.dart';
 class AttendanceDetails extends StatefulWidget {
   final String eventId;
 
-  const AttendanceDetails({Key? key, required this.eventId}) : super(key: key);
+  const AttendanceDetails({super.key, required this.eventId});
 
   @override
   _AttendanceDetailsState createState() => _AttendanceDetailsState();
 }
 
 class _AttendanceDetailsState extends State<AttendanceDetails> {
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'http://your-backend-url.com/api');
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   List<dynamic> _attendedMembers = [];
   List<dynamic> _notAttendedMembers = [];
 

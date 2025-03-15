@@ -14,7 +14,7 @@ class _GroupMembersState extends State<GroupMembers> {
   List<dynamic> members = [];
   String searchQuery = "";
 
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   @override
   void initState() {
@@ -170,7 +170,7 @@ class AddMemberScreen extends StatefulWidget {
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
   final TextEditingController _memberIdController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   Future<void> _addMember() async {
     try {
@@ -231,7 +231,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _roleController = TextEditingController();
 
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   @override
   void initState() {

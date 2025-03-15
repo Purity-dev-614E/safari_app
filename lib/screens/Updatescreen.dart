@@ -12,7 +12,7 @@ class UpdateProfileScreen extends StatefulWidget {
 class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   String? _fullName;
-  String? _email;
+  // String? _email;
   String? _role;
   String? _gender;
   String? _location;
@@ -20,19 +20,21 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _nextOfKinContact;
   String? _phoneNumber;
 
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? userId = prefs.getString('user_id');
-      if (userId == null) return;
+      if (userId == null) {
+        print('User ID is null');
+        return;
+      }
 
       try {
         final response = await _userService.updateUser(userId, {
           'full_name': _fullName?.toLowerCase(),
-          'email': _email?.toLowerCase(),
           'role': _role?.toLowerCase(),
           'gender': _gender?.toLowerCase(),
           'location': _location?.toLowerCase(),
@@ -41,10 +43,15 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           'phone_number': _phoneNumber,
         });
 
-        await prefs.setString('full_name', _fullName!);
-        await prefs.setString('email', _email!);
-        await prefs.setString('user_role', _role!);
-        Navigator.pushReplacementNamed(context, '/');
+        print('Response from updateUser: $response');
+
+        if (response['success'] == true) {
+          await prefs.setString('full_name', _fullName!);
+          await prefs.setString('user_role', _role!);
+          Navigator.pushReplacementNamed(context, '/');
+        } else {
+          print('Failed to update profile: ${response['message']}');
+        }
       } catch (e) {
         print('Failed to update profile: $e');
       }
@@ -62,7 +69,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           child: ListView(
             children: [
               _buildTextField("Full Name", (value) => _fullName = value),
-              _buildTextField("Email", (value) => _email = value),
+              // _buildTextField("Email", (value) => _email = value),
               _buildTextField('Role', (value) => _role = value),
               _buildTextField("Gender", (value) => _gender = value),
               _buildTextField("Location", (value) => _location = value),

@@ -21,9 +21,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int numberOfUpcomingEvents = 0;
   String? adminUserId;
 
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
-  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   @override
   void initState() {

@@ -22,7 +22,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   // String? _next_of_kin;
   // String? _next_of_kin_contact;
 
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);

@@ -14,7 +14,7 @@ class _LoginState extends State<Login> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final AuthService authService = AuthService(baseUrl: 'https://yourapi.com');  // Initialize AuthService with your base URL
+  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');  // Initialize AuthService with your base URL
 
   Future<void> _login() async {
     final email = emailController.text;
@@ -36,42 +36,35 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
 
-      if (response != null) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', response['token']);
-        await prefs.setString('user_role', response['role']);
-        await prefs.setString('full_name', response['full_name']);
-        await prefs.setString('email', response['email']);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', response['token'] ?? '');
+      await prefs.setString('user_role', response['role'] ?? '');
+      await prefs.setString('full_name', response['full_name'] ?? '');
+      await prefs.setString('email', response['email'] ?? '');
+      await prefs.setString('user_id', response['id']);
 
-        Map<String, dynamic> userInfo = {
-          'loggedIn': true,
-          'role': response['role'],
-          'profileComplete': response['full_name'] != null && response['email'] != null,
-        };
-
-        // Navigate based on role
-        if (!userInfo['profileComplete']) {
-          Navigator.pushReplacementNamed(context, '/updateProfile');
-        } else {
-          switch (userInfo['role']) {
-            case 'super_admin':
-              Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
-              break;
-            case 'admin':
-              Navigator.pushReplacementNamed(context, '/adminDashboard');
-              break;
-            case 'user':
-              Navigator.pushReplacementNamed(context, '/userDashboard');
-              break;
-            default:
-              Navigator.pushReplacementNamed(context, '/login');
-          }
+      if (response['full_name'] == null || response['full_name'].isEmpty) {
+        Navigator.pushReplacementNamed(context, '/updateProfile');
+      } else {
+        switch (response['role']) {
+          case 'super_admin':
+            Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
+            break;
+          case 'admin':
+            Navigator.pushReplacementNamed(context, '/adminDashboard');
+            break;
+          case 'user':
+            Navigator.pushReplacementNamed(context, '/userDashboard');
+            break;
+          default:
+            Navigator.pushReplacementNamed(context, '/login');
         }
       }
-    } catch (e) {
+        } catch (e) {
       setState(() {
         isLoading = false;
       });
+      print(e);
 
       _showError('Login failed: ${e.toString()}');
     }

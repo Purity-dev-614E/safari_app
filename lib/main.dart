@@ -39,7 +39,7 @@ Future<Map<String, dynamic>> getUserInfo() async {
 
 class MyApp extends StatelessWidget {
   final Map<String, dynamic> userInfo;
-  MyApp({required this.userInfo});
+  const MyApp({super.key, required this.userInfo});
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
     }
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: home,
       onGenerateRoute: (settings) {
         if (settings.name == '/adminDashboard') {
@@ -82,6 +83,7 @@ class MyApp extends StatelessWidget {
         '/SuperSettings': (context) => SuperSettings(),
         '/userDashboard': (context) => UserDashboard(),
         '/Profile': (context) => UserProfileScreen(),
+        '/updateProfile': (context) => UpdateProfileScreen()
       },
     );
   }

@@ -30,8 +30,8 @@ class _UserManagementState extends State<UserManagement> {
   List<dynamic> groups = [];
   String searchQuery = '';
 
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
-  final GroupService _groupService = GroupService(baseUrl: 'http://your-backend-url.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   bool _isLoading = true;
 
   @override

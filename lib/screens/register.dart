@@ -15,7 +15,7 @@ class _SignupState extends State<Signup> {
   bool isLoading = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final AuthService authService = AuthService(baseUrl: 'https://yourapi.com');  // Initialize AuthService with your base URL
+  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');  // Initialize AuthService with your base URL
 
   Future<void> _signup() async {
     if (_formKey.currentState!.validate()) {
@@ -33,16 +33,14 @@ class _SignupState extends State<Signup> {
           isLoading = false;
         });
 
-        if (response != null) {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', response['token']);
-          await prefs.setString('user_role', response['role']);
-          await prefs.setString('full_name', response['full_name']);
-          await prefs.setString('email', response['email']);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', response['token']);
+        await prefs.setString('user_role', response['role']);
+        await prefs.setString('full_name', response['full_name']);
+        await prefs.setString('email', response['email']);
 
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      } catch (e) {
+        Navigator.pushReplacementNamed(context, '/login');
+            } catch (e) {
         setState(() {
           isLoading = false;
         });

@@ -5,14 +5,14 @@ import 'attendanceDetails.dart';
 class AdminEventList extends StatefulWidget {
   final String groupId;
 
-  const AdminEventList({Key? key, required this.groupId}) : super(key: key);
+  const AdminEventList({super.key, required this.groupId});
 
   @override
   _AdminEventListState createState() => _AdminEventListState();
 }
 
 class _AdminEventListState extends State<AdminEventList> {
-  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   List<dynamic> _events = [];
 
   @override

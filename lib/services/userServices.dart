@@ -11,7 +11,7 @@ class UserService {
   Future<Map<String, dynamic>> getUserById(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/users/$id'),
+      Uri.parse('$baseUrl/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -28,7 +28,7 @@ class UserService {
   Future<List<dynamic>> getAllUsers() async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/users'),
+      Uri.parse(baseUrl),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -45,7 +45,7 @@ class UserService {
   Future<List<dynamic>> searchUsersByName(String name) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/users/search?name=$name'),
+      Uri.parse('$baseUrl/search?name=$name'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -61,8 +61,12 @@ class UserService {
 
   Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
     final token = await _secureStorage.read(key: 'auth_token');
+    final url =   Uri.parse('$baseUrl/$id');
+    print(url);
+
+
     final response = await http.put(
-      Uri.parse('$baseUrl/users/$id'),
+      url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -80,7 +84,7 @@ class UserService {
   Future<void> deleteUser(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.delete(
-      Uri.parse('$baseUrl/users/$id'),
+      Uri.parse('$baseUrl/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

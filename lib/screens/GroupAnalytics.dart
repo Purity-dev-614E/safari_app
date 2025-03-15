@@ -20,9 +20,9 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
   List<dynamic>? periodicAttendance;
   String? adminUserId;
 
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'http://your-backend-url.com/api');
-  final EventService _eventService = EventService(baseUrl: 'http://your-backend-url.com/api');
-  final UserService _userService = UserService(baseUrl: 'http://your-backend-url.com/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   @override
   void initState() {
