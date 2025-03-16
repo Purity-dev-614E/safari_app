@@ -6,7 +6,7 @@ import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'adminEventList.dart'; // Ensure this import is correct
+// Ensure this import is correct
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});

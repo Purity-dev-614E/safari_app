@@ -97,7 +97,7 @@ class AnalyticsService {
   Future<List<dynamic>> getGroupDemographics(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final id = await prefs.getString('group_id');
+    final id = prefs.getString('group_id');
     final response = await http.get(
       Uri.parse('$baseUrl/$id/groupDemographics'),
       headers: {
