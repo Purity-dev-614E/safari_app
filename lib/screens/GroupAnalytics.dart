@@ -19,6 +19,7 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
   List<dynamic>? periodicAttendance;
   String? adminUserId;
   String? groupId;
+  bool isLoading = true;
 
   final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
@@ -118,9 +119,13 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
       setState(() {
         eventAttendance = fetchedEventAttendance;
         periodicAttendance = fetchedPeriodicAttendance;
+        isLoading = false;
       });
     } catch (e) {
       print('Failed to fetch analytics data: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -137,23 +142,13 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initializeGroupId(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Error: ${snapshot.error}')),
-          );
-        } else {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text("Group Analytics"),
-            ),
-            body: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Group Analytics"),
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
               children: [
                 // Time filter dropdown
                 Padding(
@@ -186,26 +181,26 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
                     padding: const EdgeInsets.all(8.0),
                     child: eventAttendance != null
                         ? LineChart(
-                      LineChartData(
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: eventAttendance!.map((data) {
-                              return FlSpot(data['eventId'].toDouble(), data['count'].toDouble());
-                            }).toList(),
-                          ),
-                        ],
-                        titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                return Text(value.toInt().toString());
-                              },
+                            LineChartData(
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: eventAttendance!.map((data) {
+                                    return FlSpot(data['eventId'].toDouble(), data['count'].toDouble());
+                                  }).toList(),
+                                ),
+                              ],
+                              titlesData: FlTitlesData(
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                      return Text(value.toInt().toString());
+                                    },
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    )
+                          )
                         : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
                   ),
                 ),
@@ -215,53 +210,50 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
                     padding: const EdgeInsets.all(8.0),
                     child: periodicAttendance != null
                         ? LineChart(
-                      LineChartData(
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: periodicAttendance!.map((data) {
-                              return FlSpot(data['time'].toDouble(), data['count'].toDouble());
-                            }).toList(),
-                          ),
-                        ],
-                        titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                return Text(value.toInt().toString());
-                              },
+                            LineChartData(
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: periodicAttendance!.map((data) {
+                                    return FlSpot(data['time'].toDouble(), data['count'].toDouble());
+                                  }).toList(),
+                                ),
+                              ],
+                              titlesData: FlTitlesData(
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (double value, TitleMeta meta) {
+                                      return Text(value.toInt().toString());
+                                    },
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    )
+                          )
                         : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
                   ),
                 ),
               ],
             ),
-            bottomNavigationBar: BottomNavigationBar(
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people),
-                  label: "Group Members",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard),
-                  label: "Dashboard",
-                ),
-              ],
-              onTap: (index) {
-                if (index == 0) {
-                  Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
-                } else if (index == 1) {
-                  Navigator.pushNamed(context, "/adminDashboard", arguments: groupId);
-                }
-              },
-            ),
-          );
-        }
-      },
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: "Group Members",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: "Dashboard",
+          ),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
+          } else if (index == 1) {
+            Navigator.pushNamed(context, "/adminDashboard", arguments: groupId);
+          }
+        },
+      ),
     );
   }
 }

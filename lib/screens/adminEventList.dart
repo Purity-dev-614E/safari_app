@@ -82,7 +82,7 @@ class _AddEventsScreenState extends State<AddEventsScreen> {
     String? groupId = prefs.getString('group_id');    if (_formKey.currentState!.validate()) {
       try {
        final response = await _eventService.createEvent(groupId!, {
-         'groupId': groupId,
+         'group_id': groupId,
          'title': _titleController.text,
          'description': _descriptionController.text,
          'date': _dateController.text,

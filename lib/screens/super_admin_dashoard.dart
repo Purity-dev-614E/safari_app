@@ -237,7 +237,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             ElevatedButton.icon(
               onPressed: () {

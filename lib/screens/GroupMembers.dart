@@ -13,6 +13,7 @@ class _GroupMembersState extends State<GroupMembers> {
   List<dynamic> members = [];
   String searchQuery = "";
   String? groupId;
+  bool isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
@@ -85,9 +86,13 @@ class _GroupMembersState extends State<GroupMembers> {
       List<dynamic> fetchedMembers = await _groupService.getGroupMembers(groupId!);
       setState(() {
         members = fetchedMembers;
+        isLoading = false;
       });
     } catch (e) {
       print('Failed to fetch group members: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -114,23 +119,13 @@ class _GroupMembersState extends State<GroupMembers> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initializeGroupId(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Error: ${snapshot.error}')),
-          );
-        } else {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text("Group Members"),
-            ),
-            body: Column(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Group Members"),
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8),
@@ -197,37 +192,34 @@ class _GroupMembersState extends State<GroupMembers> {
                 ),
               ],
             ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
-                );
-              },
-              child: const Icon(Icons.person_add_alt),
-            ),
-            bottomNavigationBar: BottomNavigationBar(
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard),
-                  label: "Dashboard",
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.bar_chart),
-                  label: "Group Analytics",
-                ),
-              ],
-              onTap: (index) {
-                if (index == 0) {
-                  Navigator.pushNamed(context, "/adminDashboard");
-                } else if (index == 1) {
-                  Navigator.pushNamed(context, "/GroupAnalytics");
-                }
-              },
-            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
           );
-        }
-      },
+        },
+        child: const Icon(Icons.person_add_alt),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: "Dashboard",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: "Group Analytics",
+          ),
+        ],
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, "/adminDashboard");
+          } else if (index == 1) {
+            Navigator.pushNamed(context, "/GroupAnalytics");
+          }
+        },
+      ),
     );
   }
 }
