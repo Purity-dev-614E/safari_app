@@ -30,7 +30,7 @@ class _UserManagementState extends State<UserManagement> {
   List<dynamic> groups = [];
   String searchQuery = '';
 
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   bool _isLoading = true;
 
@@ -47,7 +47,7 @@ class _UserManagementState extends State<UserManagement> {
       setState(() {
         users = userData.map((data) => User(
           id: data['id'] ?? '',
-          name: data['name'] ?? '',
+          name: data['full_name'] ?? '',
           email: data['email'] ?? '',
           role: data['role'] ?? '',
           group: data['group'] ?? '',

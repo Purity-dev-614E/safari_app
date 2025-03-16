@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AnalyticsService {
   final String baseUrl;
@@ -79,7 +80,7 @@ class AnalyticsService {
   Future<Map<String, dynamic>> getAttendanceByTimePeriod(String timePeriod) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/analytics/attendance?timePeriod=$timePeriod'),
+      Uri.parse('$baseUrl/attendance/attendance?timePeriod=$timePeriod'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -93,10 +94,12 @@ class AnalyticsService {
     }
   }
 
-  Future<List<dynamic>> getGroupDemographics() async {
+  Future<List<dynamic>> getGroupDemographics(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final id = await prefs.getString('group_id');
     final response = await http.get(
-      Uri.parse('$baseUrl/analytics/groupDemographics'),
+      Uri.parse('$baseUrl/$id/groupDemographics'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

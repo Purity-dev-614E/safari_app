@@ -22,7 +22,7 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   @override
   void initState() {
@@ -63,7 +63,9 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       Map<String, dynamic>? fetchedAttendanceData = await _analyticsService.getAttendanceByTimePeriod(selectedTimePeriod);
 
       // Fetch group demographics
-      List<dynamic>? fetchedGroupDemographics = await _analyticsService.getGroupDemographics();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString('group_id');
+      List<dynamic>? fetchedGroupDemographics = await _analyticsService.getGroupDemographics(id!);
 
       setState(() {
         groups = fetchedGroups ?? [];

@@ -7,9 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'adminEventList.dart';
 
 class AdminDashboard extends StatefulWidget {
-  final String groupId;
-
-  const AdminDashboard({super.key, required this.groupId});
+  const AdminDashboard({super.key});
 
   @override
   _AdminDashboardState createState() => _AdminDashboardState();
@@ -20,6 +18,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int numberOfMembers = 0;
   int numberOfUpcomingEvents = 0;
   String? adminUserId;
+  String? groupId;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
   final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
@@ -29,7 +28,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     _fetchAdminUserId();
-    _fetchDashboardData();
+    _initializeGroupId();
   }
 
   Future<void> _fetchAdminUserId() async {
@@ -39,22 +38,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  Future<void> _fetchDashboardData() async {
-    if (widget.groupId.isEmpty) return;
+  Future<void> _initializeGroupId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedGroupId = prefs.getString('group_id');
 
-    try {
-      List<dynamic> members = await _groupService.getGroupMembers(widget.groupId);
-      Map<String, dynamic> groupDetails = await _groupService.getGroupById(widget.groupId);
-      List<dynamic> events = await _eventService.getEventsByGroup(widget.groupId);
-
+    if (savedGroupId == null) {
+      String groupName = await _promptForGroupName();
+      String fetchedGroupId = await _fetchGroupIdByName(groupName);
+      await prefs.setString('group_id', fetchedGroupId);
       setState(() {
-        groupName = groupDetails['name'];
-        numberOfMembers = members.length;
-        numberOfUpcomingEvents = events.length;
+        groupId = fetchedGroupId;
       });
-    } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+    } else {
+      setState(() {
+        groupId = savedGroupId;
+      });
     }
+
+    _fetchDashboardData();
   }
 
   Future<String> _promptForGroupName() async {
@@ -84,13 +85,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return groupName;
   }
 
+  Future<String> _fetchGroupIdByName(String groupName) async {
+    try {
+      final group = await _groupService.getGroupByName(groupName);
+      return group['id'];
+    } catch (e) {
+      throw Exception('Failed to fetch group ID by name: $e');
+    }
+  }
+
+  Future<void> _fetchDashboardData() async {
+    if (groupId == null || groupId!.isEmpty) return;
+
+    try {
+      List<dynamic> members = await _groupService.getGroupMembers(groupId!);
+      Map<String, dynamic> groupDetails = await _groupService.getGroupById(groupId!);
+      List<dynamic> events = await _eventService.getEventsByGroup(groupId!);
+
+      setState(() {
+        groupName = groupDetails['name'];
+        numberOfMembers = members.length;
+        numberOfUpcomingEvents = events.length;
+      });
+    } catch (e) {
+      print('Failed to fetch dashboard data: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Dashboard"),
       ),
-      body: Padding(
+      body:
+      Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,10 +139,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ElevatedButton.icon(
               onPressed: () {
                 // Navigate to add members screen (form)
+                Navigator.pushReplacementNamed(context, '/createEvent');
                 _addMember('newMemberId'); // Replace 'newMemberId' with actual member ID
               },
-              icon: Icon(Icons.person_add_alt_1),
-              label: const Text("Add Member"),
+              icon: Icon(Icons.event),
+              label: const Text("Add Events"),
             ),
           ],
         ),
@@ -123,7 +153,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AdminEventList(groupId: 'yourGroupId'), // Replace 'yourGroupId' with actual group ID
+              builder: (context) => AdminEventList(groupId: groupId!), // Replace 'yourGroupId' with actual group ID
             ),
           );
         },
@@ -143,9 +173,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         onTap: (index) {
           // Handle Navigation
           if (index == 0) {
-            Navigator.pushNamed(context, "/GroupMembers", arguments: widget.groupId);
+            Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
           } else if (index == 1) {
-            Navigator.pushNamed(context, "/GroupAnalytics", arguments: widget.groupId);
+            Navigator.pushNamed(context, "/GroupAnalytics", arguments: groupId);
           }
         },
       ),
@@ -178,7 +208,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _addMember(String memberId) async {
     try {
-      await _groupService.addGroupMember(widget.groupId, memberId);
+      await _groupService.addGroupMember(groupId!, memberId);
       _fetchDashboardData();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member added successfully')),

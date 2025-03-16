@@ -160,4 +160,28 @@ class GroupService {
       throw Exception('Failed to assign admin to group: ${response.body}');
     }
   }
+
+
+ Future<Map<String, dynamic>> getGroupByName(String name) async {
+   final token = await _secureStorage.read(key: 'auth_token');
+   final response = await http.get(
+     Uri.parse('$baseUrl/groups?name=$name'),
+     headers: {
+       'Content-Type': 'application/json',
+       'Authorization': 'Bearer $token',
+     },
+   );
+
+   if (response.statusCode == 200) {
+     final List<dynamic> groups = jsonDecode(response.body);
+     if (groups.isNotEmpty) {
+       return groups.first as Map<String, dynamic>;
+     } else {
+       throw Exception('Group not found');
+     }
+   } else {
+     throw Exception('Failed to fetch group by name: ${response.body}');
+   }
+ }
 }
+

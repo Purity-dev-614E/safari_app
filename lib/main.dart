@@ -6,10 +6,10 @@ import 'package:church_app/screens/SuperSettings.dart';
 import 'package:church_app/screens/Updatescreen.dart';
 import 'package:church_app/screens/UserManagement.dart';
 import 'package:church_app/screens/adminDashboard.dart';
+import 'package:church_app/screens/adminEventList.dart';
 import 'package:church_app/screens/register.dart';
 import 'package:church_app/screens/super_admin_dashoard.dart';
 import 'package:church_app/screens/userDashboard.dart';
-import 'package:church_app/services/tokenService.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,8 +42,6 @@ class MyApp extends StatelessWidget {
       );
     } else {
       final userData = await userService.getUserById(userId);
-      // print(userData['full_name']);
-      // print(userData['role']);
 
       if (userData['role'] != null) {
         if (userData['role'] == 'user') {
@@ -80,8 +78,15 @@ class MyApp extends StatelessWidget {
         '/SuperSettings': (context) => const SuperSettings(),
         '/userDashboard': (context) => const UserDashboard(),
         '/Profile': (context) => const UserProfileScreen(),
-        '/updateProfile': (context) => const UpdateProfileScreen()
+        '/updateProfile': (context) => const UpdateProfileScreen(),
+        '/adminDashboard': (context) => const AdminDashboard(),
+        '/GroupMembers': (context) => const GroupMembers(),
+        '/GroupAnalytics': (context) => const GroupAnalytics(),
+        '/createEvent': (context) => const AddEventsScreen(),
+
       },
+
+
     );
   }
 }

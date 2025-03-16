@@ -113,7 +113,7 @@ class AttendanceService {
   Future<List<dynamic>> getAttendanceByTimePeriod(String groupId, String timePeriod) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/analytics/attendance?timePeriod=$timePeriod'),
+      Uri.parse('$baseUrl/attendance/attendance?timePeriod=$timePeriod'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

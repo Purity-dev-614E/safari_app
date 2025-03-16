@@ -17,7 +17,7 @@ class _SuperSettingsState extends State<SuperSettings> {
   String? superAdminUserId;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   @override
   void initState() {
@@ -181,9 +181,14 @@ class _SuperSettingsState extends State<SuperSettings> {
         children: [
           // Group management section
           ListTile(
-            title: const Text(
-              "Group Management",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            title: TextButton(
+              onPressed:() {
+                _fetchGroups();
+              },
+              child: const Text(
+                "Group Management",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
             trailing: IconButton(
               onPressed: _showCreateGroupDialog,
@@ -211,7 +216,7 @@ class _SuperSettingsState extends State<SuperSettings> {
                 ),
               ),
             );
-          }).toList(),
+          }),
           const Divider(height: 32),
           // App permissions section
           SwitchListTile(

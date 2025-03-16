@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -14,37 +15,50 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   File? _image;
   final picker = ImagePicker();
-  String? _full_name;
-  String? _email;
-  String? _gender;
-  String? _role;
-  String? _location;
-
+  String? _full_name = '';
+  String? _email = '';
+  String? _gender = '';
+  String? _location = '';
 
   final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
 
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-
-      try {
-        // Upload the image to the server and get the URL
-        final imageUrl = await _userService.uploadProfilePicture(_image!);
-
-        // Update the user's profile with the new profile picture URL
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? userId = prefs.getString('user_id');
-        if (userId != null) {
-          await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
-          setState(() {
-            _image = File(imageUrl);
-          });
+      if (kIsWeb) {
+        // Handle web image upload
+        try {
+          final imageUrl = await _userService.uploadProfilePictureWeb(pickedFile);
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          String? userId = prefs.getString('user_id');
+          if (userId != null) {
+            await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+            setState(() {
+              _image = File(imageUrl);
+            });
+          }
+        } catch (e) {
+          print('Failed to upload image: $e');
         }
-      } catch (e) {
-        print('Failed to upload image: $e');
+      } else {
+        // Handle mobile image upload
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+
+        try {
+          final imageUrl = await _userService.uploadProfilePicture(_image!);
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          String? userId = prefs.getString('user_id');
+          if (userId != null) {
+            await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+            setState(() {
+              _image = File(imageUrl);
+            });
+          }
+        } catch (e) {
+          print('Failed to upload image: $e');
+        }
       }
     }
   }
@@ -57,12 +71,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final data = await _userService.getUserById(userId);
       setState(() {
-        _full_name = data['full_name'];
-        _email = data['email'];
-        _role = data['role'];
-        _location = data['location'];
-        _gender = data['gender'];
-        _image = File(data['profile_picture']);
+        _full_name = data['full_name'] ?? '';
+        _email = data['email'] ?? '';
+        _location = data['location'] ?? '';
+        _gender = data['gender'] ?? '';
+        _image = data['profile_picture'] != null ? File(data['profile_picture']) : null;
       });
     } catch (e) {
       print('Failed to fetch user info: $e');
@@ -96,7 +109,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             const SizedBox(height: 20),
             _buildInfoRow("Name", _full_name),
             _buildInfoRow("Email", _email),
-            _buildInfoRow("Role", _role),
             _buildInfoRow("Gender", _gender),
             _buildInfoRow("Location", _location),
 

@@ -173,17 +173,14 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 ],
               ),
               const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildQuickActionButton(
-                    label: "Create Group",
-                    icon: Icons.add,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/CreateGroup');
-                    }, // Navigate to create group form
-                  ),
-                ],
+
+              const SizedBox(height: 24.0),
+              Text(
+                  'Attendance Trends for this week',
+                style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold
+                ),
               ),
               const SizedBox(height: 24.0),
               Container(
@@ -195,12 +192,20 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 ),
                 child: Center(
                   child: Text(
-                    _analytics != null ? "Attendance Trends: ${_analytics!['attendance_trends']}" : "Loading...",
+                    _analytics != null ? "Attendance Trends: ${_analytics!['attendance_trends'] ?? 'No Data'}" : "Loading...",
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
+              Text(
+                "Groups Today",
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold
+                ),
+              ),
+              const SizedBox(height: 24.0),
               Container(
                 height: 200,
                 width: double.infinity,
@@ -210,7 +215,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                 ),
                 child: Center(
                   child: Text(
-                    _analytics != null ? "Group Statistics: ${_analytics!['group_statistics']}" : "Loading...",
+                    _analytics != null ? "Group Statistics: ${_analytics!['group_statistics'] ?? 'No Data'}" : "Loading...",
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),

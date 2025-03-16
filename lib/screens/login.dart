@@ -50,7 +50,7 @@ class _LoginState extends State<Login> {
           value: token
       );
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userId = await prefs.getString('user_id');
+      final String? userId = prefs.getString('user_id');
 
       final userData = await userService.getUserById(userId!);
       print(userData['full_name']);
