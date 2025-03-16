@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -25,40 +24,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      if (kIsWeb) {
-        // Handle web image upload
-        try {
-          final imageUrl = await _userService.uploadProfilePictureWeb(pickedFile);
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          String? userId = prefs.getString('user_id');
-          if (userId != null) {
-            await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
-            setState(() {
-              _image = File(imageUrl);
-            });
-          }
-        } catch (e) {
-          print('Failed to upload image: $e');
-        }
-      } else {
-        // Handle mobile image upload
-        setState(() {
-          _image = File(pickedFile.path);
-        });
+      setState(() {
+        _image = File(pickedFile.path);
+      });
 
-        try {
-          final imageUrl = await _userService.uploadProfilePicture(_image!);
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          String? userId = prefs.getString('user_id');
-          if (userId != null) {
-            await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
-            setState(() {
-              _image = File(imageUrl);
-            });
-          }
-        } catch (e) {
-          print('Failed to upload image: $e');
+      try {
+        final imageUrl = await _userService.uploadProfilePicture(_image!);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? userId = prefs.getString('user_id');
+        if (userId != null) {
+          await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+          setState(() {
+            _image = File(imageUrl);
+          });
         }
+      } catch (e) {
+        print('Failed to upload image: $e');
       }
     }
   }
