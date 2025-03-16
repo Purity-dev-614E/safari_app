@@ -6,7 +6,7 @@ class GroupService {
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  GroupService({required this.baseUrl});
+  GroupService({required this.baseUrl}) : assert(!baseUrl.endsWith('/'), 'baseUrl should not end with a slash');
 
   Future<Map<String, dynamic>> createGroup(Map<String, dynamic> groupData) async {
     final token = await _secureStorage.read(key: 'auth_token');

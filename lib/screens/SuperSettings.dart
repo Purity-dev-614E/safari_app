@@ -170,6 +170,69 @@ class _SuperSettingsState extends State<SuperSettings> {
     });
   }
 
+  Future<void> _showAssignAdminDialog(String groupId, String currentAdminName) async {
+    final TextEditingController nameController = TextEditingController();
+
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Assign Admin to Group'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (currentAdminName != 'None')
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    'Current Admin: $currentAdminName',
+                    style: TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  hintText: "Enter new admin's name",
+                  labelText: "Admin's Name",
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  final users = await _userService.searchUsersByName(nameController.text);
+                  if (users.isEmpty) {
+                    throw Exception('No user found with that name');
+                  }
+                  
+                  await _userService.assignAdminToGroup(groupId, users[0]['id']);
+                  Navigator.pop(context);
+                  _fetchGroups(); // Refresh the list
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Admin assigned successfully')),
+                  );
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to assign admin: $e')),
+                  );
+                }
+              },
+              child: const Text('Assign'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,7 +245,7 @@ class _SuperSettingsState extends State<SuperSettings> {
           // Group management section
           ListTile(
             title: TextButton(
-              onPressed:() {
+              onPressed: () {
                 _fetchGroups();
               },
               child: const Text(
@@ -196,12 +259,13 @@ class _SuperSettingsState extends State<SuperSettings> {
             ),
           ),
           const SizedBox(height: 8.0),
-          // List of groups with delete action
+          // List of groups with delete action and admin assignment
           ...groups.map((group) {
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
               child: ListTile(
                 title: Text(group['name'] ?? ''),
+                subtitle: Text('Admin: ${group['admin_name'] ?? 'None'}'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -210,9 +274,26 @@ class _SuperSettingsState extends State<SuperSettings> {
                     ),
                   );
                 },
-                trailing: IconButton(
-                  onPressed: () => _showDeleteGroupDialog(group['id'] ?? '', group['name'] ?? ''),
-                  icon: Icon(Icons.delete, color: Colors.red),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.admin_panel_settings),
+                      onPressed: () => _showAssignAdminDialog(
+                        group['id'] ?? '',
+                        group['admin_name'] ?? 'None',
+                      ),
+                      tooltip: 'Assign Admin',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _showDeleteGroupDialog(
+                        group['id'] ?? '',
+                        group['name'] ?? '',
+                      ),
+                      tooltip: 'Delete Group',
+                    ),
+                  ],
                 ),
               ),
             );

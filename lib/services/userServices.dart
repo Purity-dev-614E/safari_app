@@ -12,7 +12,9 @@ class UserService {
 
   Future<String> uploadProfilePicture(File image) async {
     final token = await _secureStorage.read(key: 'auth_token');
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/upload'));
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('user_id');
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$id/upload'));
     request.headers['Authorization'] = 'Bearer $token';
     request.files.add(await http.MultipartFile.fromPath('file', image.path));
 
@@ -125,6 +127,8 @@ class UserService {
     }
   }
 
+  
+
 
   Future<void> deleteUser(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
@@ -151,5 +155,26 @@ class UserService {
 
   Future<void> deleteToken(String key) async {
     await _secureStorage.delete(key: key);
+  }
+
+  Future<Map<String, dynamic>> assignAdminToGroup(String groupId, String userId) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/assign-admin'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'groupId': groupId,
+        'userId': userId,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to assign admin to group: ${response.body}');
+    }
   }
 }
