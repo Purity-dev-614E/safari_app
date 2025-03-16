@@ -128,6 +128,26 @@ class GroupService {
     }
   }
 
+
+  Future<Map<String, dynamic>> addGroupMemberByEmail(String groupId, String email) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/$groupId/members'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to add group member by email: ${response.body}');
+    }
+  }
+
+
   Future<void> removeGroupMember(String groupId, String userId) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.delete(

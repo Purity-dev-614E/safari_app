@@ -1,3 +1,4 @@
+import 'package:church_app/services/tokenService.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -95,8 +96,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             const SizedBox(height: 20),
             TextButton(
-              onPressed: () {
-                // Handle logout
+              onPressed: () async {
+                await SecureStorageService().deleteToken('auth_token');
+                Navigator.pushReplacementNamed(context, '/login');
               },
               child: const Text("Logout", style: TextStyle(color: Colors.red)),
             ),

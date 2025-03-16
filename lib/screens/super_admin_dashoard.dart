@@ -138,9 +138,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ),
           IconButton(
             onPressed: () {
-              Navigator.pushNamed(context, '/SuperSettings');
+              Navigator.pushNamed(context, '/Profile');
             }, // Navigate to the settings screen
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.account_circle),
           ),
         ],
       ),
@@ -245,6 +245,17 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               }, // Navigate to User Management screen
               icon: Icon(Icons.people_outlined),
               label: const Text("User Management"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              ),
+            ),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, "/SuperSettings");
+              }, // Navigate to Group Management screen
+              icon: Icon(Icons.groups),
+              label: const Text("Group Management"),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               ),

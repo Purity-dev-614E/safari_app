@@ -1,10 +1,12 @@
+import 'package:church_app/screens/GroupMembers.dart';
+import 'package:church_app/screens/Profile.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'adminEventList.dart';
+import 'adminEventList.dart'; // Ensure this import is correct
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -117,9 +119,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Dashboard"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.account_circle),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => UserProfileScreen()),
+              );
+            },
+          ),
+        ],
       ),
-      body:
-      Padding(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,12 +164,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => AdminEventList(groupId: groupId!), // Replace 'yourGroupId' with actual group ID
-            ),
+            MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
           );
         },
-        child: const Icon(Icons.event),
+        child: const Icon(Icons.person_add_alt),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [

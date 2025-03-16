@@ -242,14 +242,14 @@ class AddMemberScreen extends StatefulWidget {
 }
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
-  final TextEditingController _memberIdController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
 
   Future<void> _addMember() async {
     try {
-      String memberId = _memberIdController.text;
+      String email = _emailController.text;
 
-      await _groupService.addGroupMember(widget.groupId, memberId);
+      await _groupService.addGroupMemberByEmail(widget.groupId, email);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Member added successfully')),
@@ -272,9 +272,9 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
         child: Column(
           children: [
             TextField(
-              controller: _memberIdController,
+              controller: _emailController,
               decoration: const InputDecoration(
-                labelText: "Member ID",
+                labelText: "Email",
                 border: OutlineInputBorder(),
               ),
             ),
