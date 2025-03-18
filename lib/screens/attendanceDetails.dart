@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/attendanceService.dart';
 import 'package:church_app/services/userServices.dart';
 
+import '../widgets/custom_notification.dart';
+import '../widgets/notification_overlay.dart';
+
+
 class AttendanceDetails extends StatefulWidget {
   final String eventId;
 
@@ -61,11 +65,9 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+    NotificationOverlay.of(context).showNotification(
+      message: message,
+      type: NotificationType.error,
     );
   }
 

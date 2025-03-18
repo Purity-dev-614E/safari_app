@@ -5,6 +5,8 @@ import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:church_app/widgets/notification_overlay.dart';
+import 'package:church_app/widgets/custom_notification.dart';
 
 // Ensure this import is correct
 
@@ -106,25 +108,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       
       return group['id'];
     } catch (e) {
-      // Show error dialog to the user
-      await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text(e.toString().contains('not an admin') 
-              ? 'You are not an admin of this group. Please enter a group where you are an admin.'
-              : 'Failed to fetch group: ${e.toString()}'),
-            actions: <Widget>[
-              ElevatedButton(
-                child: Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
+      // Show error notification
+      NotificationOverlay.of(context).showNotification(
+        message: e.toString().contains('not an admin') 
+          ? 'You are not an admin of this group. Please enter a group where you are an admin.'
+          : 'Failed to fetch group: ${e.toString()}',
+        type: NotificationType.error,
       );
       throw e;
     }
@@ -144,7 +133,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         numberOfUpcomingEvents = events.length;
       });
     } catch (e) {
-      print('Failed to fetch dashboard data: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch dashboard data: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -254,12 +246,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       await _groupService.addGroupMember(groupId!, memberId);
       _fetchDashboardData();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Member added successfully')),
+      NotificationOverlay.of(context).showNotification(
+        message: 'Member added successfully',
+        type: NotificationType.success,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add member')),
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to add member: $e',
+        type: NotificationType.error,
       );
     }
   }

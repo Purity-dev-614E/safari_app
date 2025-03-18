@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/screens/login.dart';
 import 'package:church_app/screens/userDashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:church_app/widgets/notification_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,34 +61,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Builder(
-        builder: (context) {
-          _checkLoginStatus(context);
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+    return NotificationOverlay(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Builder(
+          builder: (context) {
+            _checkLoginStatus(context);
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          },
+        ),
+        routes: {
+          '/login': (context) => const Login(),
+          '/register': (context) => const Signup(),
+          '/super_admin_dashboard': (context) => const SuperAdminDashboard(),
+          '/UserManagement': (context) => const UserManagement(),
+          '/SuperAnalytics': (context) => const SuperAnalytics(),
+          '/SuperSettings': (context) => const SuperSettings(),
+          '/userDashboard': (context) => const UserDashboard(),
+          '/Profile': (context) => const UserProfileScreen(),
+          '/updateProfile': (context) => const UserProfileScreen(),
+          '/adminDashboard': (context) => const AdminDashboard(),
+          '/GroupMembers': (context) => const GroupMembers(),
+          '/GroupAnalytics': (context) => const GroupAnalytics(),
+          '/createEvent': (context) => const AddEventsScreen(),
         },
       ),
-      routes: {
-        '/login': (context) => const Login(),
-        '/register': (context) => const Signup(),
-        '/super_admin_dashboard': (context) => const SuperAdminDashboard(),
-        '/UserManagement': (context) => const UserManagement(),
-        '/SuperAnalytics': (context) => const SuperAnalytics(),
-        '/SuperSettings': (context) => const SuperSettings(),
-        '/userDashboard': (context) => const UserDashboard(),
-        '/Profile': (context) => const UserProfileScreen(),
-        '/updateProfile': (context) => const UserProfileScreen(),
-        '/adminDashboard': (context) => const AdminDashboard(),
-        '/GroupMembers': (context) => const GroupMembers(),
-        '/GroupAnalytics': (context) => const GroupAnalytics(),
-        '/createEvent': (context) => const AddEventsScreen(),
-
-      },
-
-
     );
   }
 }

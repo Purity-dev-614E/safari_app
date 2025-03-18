@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
+import '../widgets/notification_overlay.dart';
+import '../widgets/custom_notification.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});
@@ -47,11 +49,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           await prefs.setString('user_role', _role!);
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile updated successfully'),
-                backgroundColor: Colors.green,
-              ),
+            NotificationOverlay.of(context).showNotification(
+              message: 'Profile updated successfully',
+              type: NotificationType.success,
             );
 
             // Navigate based on role
@@ -71,21 +71,17 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to update profile: ${response['message']}'),
-                backgroundColor: Colors.red,
-              ),
+            NotificationOverlay.of(context).showNotification(
+              message: 'Failed to update profile: ${response['message']}',
+              type: NotificationType.error,
             );
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update profile: $e'),
-              backgroundColor: Colors.red,
-            ),
+          NotificationOverlay.of(context).showNotification(
+            message: 'Failed to update profile: $e',
+            type: NotificationType.error,
           );
         }
       } finally {
@@ -102,7 +98,14 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Update Profile"),
+        title: Text(
+          "Update Profile",
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: Container(
@@ -124,70 +127,170 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Personal Information',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                  // Personal Information Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 5,
+                          blurRadius: 15,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    "Full Name",
-                    (value) => _fullName = value,
-                    icon: Icons.person,
-                  ),
-                  _buildTextField(
-                    'Role',
-                    (value) => _role = value,
-                    icon: Icons.work,
-                  ),
-                  _buildTextField(
-                    "Gender",
-                    (value) => _gender = value,
-                    icon: Icons.person_outline,
-                  ),
-                  _buildTextField(
-                    "Location",
-                    (value) => _location = value,
-                    icon: Icons.location_on,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person,
+                              color: Colors.blue.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Personal Information',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Full Name",
+                          (value) => _fullName = value,
+                          icon: Icons.person,
+                        ),
+                        _buildTextField(
+                          'Role',
+                          (value) => _role = value,
+                          icon: Icons.work,
+                        ),
+                        _buildTextField(
+                          "Gender",
+                          (value) => _gender = value,
+                          icon: Icons.person_outline,
+                        ),
+                        _buildTextField(
+                          "Location",
+                          (value) => _location = value,
+                          icon: Icons.location_on,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Contact Information',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+
+                  // Contact Information Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 5,
+                          blurRadius: 15,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.contact_phone,
+                              color: Colors.blue.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Contact Information',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPhoneNumberField(),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildPhoneNumberField(),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Emergency Contact',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+
+                  // Emergency Contact Section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          spreadRadius: 5,
+                          blurRadius: 15,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.emergency,
+                              color: Colors.blue.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Emergency Contact',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          "Next of Kin",
+                          (value) => _nextOfKin = value,
+                          icon: Icons.contact_phone,
+                        ),
+                        _buildNextOfKinNumberField(),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    "Next of Kin",
-                    (value) => _nextOfKin = value,
-                    icon: Icons.contact_phone,
-                  ),
-                  _buildNextOfKinNumberField(),
                   const SizedBox(height: 32),
+
+                  // Save Button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _updateProfile,
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 2,
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -218,21 +321,22 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       child: TextFormField(
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: icon != null ? Icon(icon) : null,
+          prefixIcon: icon != null ? Icon(icon, color: Colors.blue.shade700) : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue, width: 2),
+            borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: Colors.blue.shade50,
+          labelStyle: TextStyle(color: Colors.blue.shade700),
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -251,21 +355,22 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       child: TextFormField(
         decoration: InputDecoration(
           labelText: 'Phone Number',
-          prefixIcon: const Icon(Icons.phone),
+          prefixIcon: Icon(Icons.phone, color: Colors.blue.shade700),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue, width: 2),
+            borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: Colors.blue.shade50,
+          labelStyle: TextStyle(color: Colors.blue.shade700),
         ),
         validator: (value) {
           if (value == null || !value.startsWith('+254')) {
@@ -284,21 +389,22 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       child: TextFormField(
         decoration: InputDecoration(
           labelText: 'Next of Kin Phone Number',
-          prefixIcon: const Icon(Icons.phone),
+          prefixIcon: Icon(Icons.phone, color: Colors.blue.shade700),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide(color: Colors.blue.shade200),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue, width: 2),
+            borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: Colors.blue.shade50,
+          labelStyle: TextStyle(color: Colors.blue.shade700),
         ),
         validator: (value) {
           if (value == null || !value.startsWith('+254')) {

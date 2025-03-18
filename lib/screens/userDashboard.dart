@@ -5,6 +5,8 @@ import 'package:church_app/services/groupServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
 import 'package:intl/intl.dart';
+import '../widgets/notification_overlay.dart';
+import '../widgets/custom_notification.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -79,32 +81,34 @@ class _UserDashboardState extends State<UserDashboard> {
         _isLoading = false;
       });
     } catch (e) {
-      _showError('Failed to fetch dashboard data: $e');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: 'Failed to fetch dashboard data: $e',
+          type: NotificationType.error,
+        );
+      }
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: Text(
+          "Dashboard",
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         elevation: 0,
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person),
+            icon: Icon(Icons.person, color: Colors.blue.shade700),
             onPressed: () {
               Navigator.pushNamed(context, '/Profile');
             },
@@ -112,7 +116,24 @@ class _UserDashboardState extends State<UserDashboard> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading dashboard...',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _fetchDashboardData,
               child: SingleChildScrollView(
@@ -153,33 +174,66 @@ class _UserDashboardState extends State<UserDashboard> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.2),
+            spreadRadius: 5,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Welcome back,',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.waving_hand,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Welcome back,',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             _userName ?? 'User',
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            _userRole?.toUpperCase() ?? '',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              _userRole?.toUpperCase() ?? '',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -188,39 +242,65 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildQuickStatsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Stats',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            spreadRadius: 5,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Total Members',
-                _totalMembers.toString(),
-                Icons.people,
-                Colors.blue,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.analytics,
+                color: Colors.blue.shade700,
+                size: 24,
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                'Upcoming Events',
-                _upcomingEvents.length.toString(),
-                Icons.event,
-                Colors.green,
+              const SizedBox(width: 8),
+              Text(
+                'Quick Stats',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Total Members',
+                  _totalMembers.toString(),
+                  Icons.people,
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Upcoming Events',
+                  _upcomingEvents.length.toString(),
+                  Icons.event,
+                  Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -234,7 +314,14 @@ class _UserDashboardState extends State<UserDashboard> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
@@ -258,93 +345,191 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildUpcomingEventsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Upcoming Events',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_upcomingEvents.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Icon(Icons.event_busy, size: 48, color: Colors.grey.shade400),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No upcoming events',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _upcomingEvents.length,
-            itemBuilder: (context, index) {
-              final event = _upcomingEvents[index];
-              return _buildEventCard(
-                event['name'],
-                event['date'],
-                event['location'],
-                event,
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  Widget _buildGroupSection() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.blue.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            spreadRadius: 5,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Your Group',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              Icon(Icons.group, color: Colors.blue.shade700),
+              Icon(
+                Icons.event_note,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
               const SizedBox(width: 8),
               Text(
-                _userGroup!,
+                'Upcoming Events',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                   color: Colors.blue.shade700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Total Members: $_totalMembers',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.blue.shade700,
+          const SizedBox(height: 16),
+          if (_upcomingEvents.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        Icons.event_busy,
+                        size: 48,
+                        color: Colors.blue.shade300,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No upcoming events',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _upcomingEvents.length,
+              itemBuilder: (context, index) {
+                final event = _upcomingEvents[index];
+                return _buildEventCard(
+                  event['name'],
+                  event['date'],
+                  event['location'],
+                  event,
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            spreadRadius: 5,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.group,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Your Group',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.group_work,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _userGroup!,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.people,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Total Members: $_totalMembers',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -353,11 +538,20 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildEventCard(String eventName, String dateTime, String location, Map<String, dynamic> event) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () {
@@ -368,6 +562,7 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           );
         },
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -390,9 +585,10 @@ class _UserDashboardState extends State<UserDashboard> {
                       children: [
                         Text(
                           eventName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -400,25 +596,36 @@ class _UserDashboardState extends State<UserDashboard> {
                           location,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: Colors.blue.shade700,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                  Icon(Icons.chevron_right, color: Colors.blue.shade300),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     DateFormat('MMM dd, yyyy').format(DateTime.parse(dateTime)),
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: Colors.blue.shade700,
                     ),
                   ),
                 ],

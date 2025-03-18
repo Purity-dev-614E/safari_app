@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/attendanceService.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:church_app/widgets/notification_overlay.dart';
+import 'package:church_app/widgets/custom_notification.dart';
 
 class GroupAnalytics extends StatefulWidget {
   const GroupAnalytics({super.key});
@@ -24,6 +26,7 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
   int totalMembers = 0;
   int totalEvents = 0;
   double averageAttendance = 0;
+  bool _isRefreshing = false;
 
   final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
@@ -75,7 +78,10 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
             onChanged: (value) {
               groupName = value;
             },
-            decoration: const InputDecoration(hintText: "Group Name"),
+            decoration: const InputDecoration(
+              hintText: "Group Name",
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -102,6 +108,10 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
       final group = await _groupService.getGroupByName(groupName);
       return group['id'];
     } catch (e) {
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch group ID by name: $e',
+        type: NotificationType.error,
+      );
       throw Exception('Failed to fetch group ID by name: $e');
     }
   }
@@ -110,12 +120,16 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
     if (groupId == null || groupId!.isEmpty) return;
 
     if (!await _isAdmin()) {
-      _showError('You do not have permission to view this page');
+      NotificationOverlay.of(context).showNotification(
+        message: 'You do not have permission to view this page',
+        type: NotificationType.error,
+      );
       return;
     }
 
     setState(() {
       isLoading = true;
+      _isRefreshing = true;
     });
 
     try {
@@ -149,12 +163,17 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
         totalEvents = events.length;
         averageAttendance = attendanceCount > 0 ? totalAttendance / attendanceCount : 0;
         isLoading = false;
+        _isRefreshing = false;
       });
     } catch (e) {
-      _showError('Failed to fetch analytics data: $e');
       setState(() {
         isLoading = false;
+        _isRefreshing = false;
       });
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch analytics data: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -164,18 +183,12 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
       Map<String, dynamic> userDetails = await _userService.getUserById(adminUserId!);
       return userDetails['role'] == 'admin';
     } catch (e) {
-      _showError('Failed to fetch user details: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch user details: $e',
+        type: NotificationType.error,
+      );
       return false;
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   Widget _buildSummaryCards() {
@@ -333,7 +346,7 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
           const SizedBox(height: 16),
           SizedBox(
             height: 300,
-            child: eventAttendance != null
+            child: eventAttendance != null && eventAttendance!.isNotEmpty
                 ? LineChart(
                     LineChartData(
                       gridData: FlGridData(show: true),
@@ -362,10 +375,24 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
                       ],
                     ),
                   )
-                : const Center(
-                    child: Text(
-                      'No event attendance data available',
-                      style: TextStyle(color: Colors.grey),
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bar_chart,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No event attendance data available',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ),
@@ -403,7 +430,7 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
           const SizedBox(height: 16),
           SizedBox(
             height: 300,
-            child: periodicAttendance != null
+            child: periodicAttendance != null && periodicAttendance!.isNotEmpty
                 ? LineChart(
                     LineChartData(
                       gridData: FlGridData(show: true),
@@ -432,10 +459,24 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
                       ],
                     ),
                   )
-                : const Center(
-                    child: Text(
-                      'No periodic attendance data available',
-                      style: TextStyle(color: Colors.grey),
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.trending_up,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No periodic attendance data available',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ),
@@ -453,8 +494,17 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
         backgroundColor: Colors.blue,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchAnalytics,
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _fetchAnalytics,
           ),
         ],
       ),

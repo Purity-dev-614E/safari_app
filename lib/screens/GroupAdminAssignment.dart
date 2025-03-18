@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/userServices.dart';
 import '../services/groupServices.dart';
+import '../widgets/notification_overlay.dart';
+import '../widgets/custom_notification.dart';
 
 class GroupAdminAssignment extends StatefulWidget {
   final UserService userService;
@@ -20,6 +22,7 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
   List<dynamic> groups = [];
   bool isLoading = true;
   String? searchQuery;
+  bool _isAssigningAdmin = false;
 
   @override
   void initState() {
@@ -37,26 +40,11 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
       });
     } catch (e) {
       setState(() => isLoading = false);
-      _showError('Failed to fetch groups: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch groups: $e',
+        type: NotificationType.error,
+      );
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 
   Future<void> _showAssignAdminDialog(String groupId, String groupName) async {
@@ -104,14 +92,17 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
                       if (value.isNotEmpty) {
                         setState(() => isSearching = true);
                         try {
-                          final results = await widget.userService.searchUsersByName(value); // Changed here
+                          final results = await widget.userService.searchUsersByName(value);
                           setState(() {
                             searchResults = results;
                             isSearching = false;
                           });
                         } catch (e) {
                           setState(() => isSearching = false);
-                          _showError('Failed to search users: $e');
+                          NotificationOverlay.of(context).showNotification(
+                            message: 'Failed to search users: $e',
+                            type: NotificationType.error,
+                          );
                         }
                       } else {
                         setState(() {
@@ -148,13 +139,24 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
                             title: Text(user['name']),
                             subtitle: Text(user['email']),
                             onTap: () async {
+                              if (_isAssigningAdmin) return;
+                              
                               try {
+                                setState(() => _isAssigningAdmin = true);
                                 await widget.userService.assignAdminToGroup(groupId, user['id']);
                                 Navigator.of(context).pop();
-                                _showSuccess('Admin assigned successfully');
+                                NotificationOverlay.of(context).showNotification(
+                                  message: 'Admin assigned successfully',
+                                  type: NotificationType.success,
+                                );
                                 fetchGroups();
                               } catch (e) {
-                                _showError('Failed to assign admin: $e');
+                                NotificationOverlay.of(context).showNotification(
+                                  message: 'Failed to assign admin: $e',
+                                  type: NotificationType.error,
+                                );
+                              } finally {
+                                setState(() => _isAssigningAdmin = false);
                               }
                             },
                           );
@@ -192,7 +194,7 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () => _showAssignAdminDialog(group['id'], group['name']),
+        onTap: _isAssigningAdmin ? null : () => _showAssignAdminDialog(group['id'], group['name']),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -245,19 +247,19 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.admin_panel_settings,
-                          color: Colors.blue,
+                          color: _isAssigningAdmin ? Colors.grey : Colors.blue,
                           size: 16,
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(
                           'Assign Admin',
                           style: TextStyle(
-                            color: Colors.blue,
+                            color: _isAssigningAdmin ? Colors.grey : Colors.blue,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -283,91 +285,94 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: fetchGroups,
+            onPressed: _isAssigningAdmin ? null : fetchGroups,
           ),
         ],
       ),
       body: isLoading
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text(
-              'Loading groups...',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      )
-          : Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search groups or admins...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-              ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: filteredGroups.isEmpty
-                ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.group_off,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
                   Text(
-                    searchQuery != null && searchQuery!.isNotEmpty
-                        ? 'No groups found matching your search'
-                        : 'No groups available',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 16,
-                    ),
+                    'Loading groups...',
+                    style: TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
             )
-                : ListView.builder(
-              itemCount: filteredGroups.length,
-              itemBuilder: (context, index) {
-                final group = filteredGroups[index];
-                return _buildGroupCard(group);
-              },
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search groups or admins...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: filteredGroups.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.group_off,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                searchQuery != null && searchQuery!.isNotEmpty
+                                    ? 'No groups found matching your search'
+                                    : 'No groups available',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: fetchGroups,
+                          child: ListView.builder(
+                            itemCount: filteredGroups.length,
+                            itemBuilder: (context, index) {
+                              final group = filteredGroups[index];
+                              return _buildGroupCard(group);
+                            },
+                          ),
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

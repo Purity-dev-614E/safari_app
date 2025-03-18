@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/attendanceService.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:church_app/widgets/notification_overlay.dart';
+import 'package:church_app/widgets/custom_notification.dart';
 
 class EventDetails extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -17,6 +19,7 @@ class _EventDetailsState extends State<EventDetails> {
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   String? userId;
   bool isInGroup = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -41,7 +44,10 @@ class _EventDetailsState extends State<EventDetails> {
         isInGroup = members.any((member) => member['id'] == userId);
       });
     } catch (e) {
-      print('Error checking group membership: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Error checking group membership: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -64,8 +70,9 @@ class _EventDetailsState extends State<EventDetails> {
           ? 'You are not a member of this group'
           : 'You can only mark attendance for past or current events';
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+      NotificationOverlay.of(context).showNotification(
+        message: message,
+        type: NotificationType.warning,
       );
       return;
     }
@@ -77,8 +84,9 @@ class _EventDetailsState extends State<EventDetails> {
         await _showNotAttendedDialog();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark attendance: ${e.toString()}')),
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to mark attendance: ${e.toString()}',
+        type: NotificationType.error,
       );
     }
   }
@@ -98,13 +106,19 @@ class _EventDetailsState extends State<EventDetails> {
               children: <Widget>[
                 TextField(
                   controller: topicController,
-                  decoration: const InputDecoration(labelText: 'Topic'),
+                  decoration: const InputDecoration(
+                    labelText: 'Topic',
+                    border: OutlineInputBorder(),
+                  ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: aobController,
-                  decoration: const InputDecoration(labelText: 'AOB'),
+                  decoration: const InputDecoration(
+                    labelText: 'AOB',
+                    border: OutlineInputBorder(),
+                  ),
                   maxLines: 3,
                 ),
               ],
@@ -119,13 +133,15 @@ class _EventDetailsState extends State<EventDetails> {
               child: const Text('Submit'),
               onPressed: () async {
                 if (topicController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter the topic')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Please enter the topic',
+                    type: NotificationType.warning,
                   );
                   return;
                 }
 
                 try {
+                  setState(() => _isLoading = true);
                   await _attendanceService.createAttendance(widget.event['id'], {
                     'userId': userId,
                     'attended': true,
@@ -134,13 +150,17 @@ class _EventDetailsState extends State<EventDetails> {
                   });
 
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Attendance marked successfully')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Attendance marked successfully',
+                    type: NotificationType.success,
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to mark attendance: ${e.toString()}')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Failed to mark attendance: ${e.toString()}',
+                    type: NotificationType.error,
                   );
+                } finally {
+                  setState(() => _isLoading = false);
                 }
               },
             ),
@@ -164,7 +184,10 @@ class _EventDetailsState extends State<EventDetails> {
               children: <Widget>[
                 TextField(
                   controller: reasonController,
-                  decoration: const InputDecoration(labelText: 'Reason'),
+                  decoration: const InputDecoration(
+                    labelText: 'Reason',
+                    border: OutlineInputBorder(),
+                  ),
                   maxLines: 3,
                 ),
               ],
@@ -179,13 +202,15 @@ class _EventDetailsState extends State<EventDetails> {
               child: const Text('Submit'),
               onPressed: () async {
                 if (reasonController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a reason')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Please enter a reason',
+                    type: NotificationType.warning,
                   );
                   return;
                 }
 
                 try {
+                  setState(() => _isLoading = true);
                   await _attendanceService.createAttendance(widget.event['id'], {
                     'userId': userId,
                     'attended': false,
@@ -193,13 +218,17 @@ class _EventDetailsState extends State<EventDetails> {
                   });
 
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Attendance marked successfully')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Attendance marked successfully',
+                    type: NotificationType.success,
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to mark attendance: ${e.toString()}')),
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Failed to mark attendance: ${e.toString()}',
+                    type: NotificationType.error,
                   );
+                } finally {
+                  setState(() => _isLoading = false);
                 }
               },
             ),
@@ -217,29 +246,122 @@ class _EventDetailsState extends State<EventDetails> {
       appBar: AppBar(
         title: const Text("Event Details"),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(event['name'], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text(event['description'], style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 10),
-            Text("Date and Time: ${event['date']}"),
-            const SizedBox(height: 10),
-            Text("Location: ${event['location']}"),
-            const SizedBox(height: 20),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event['name'],
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      event['description'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Date and Time: ${event['date']}",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Location: ${event['location']}",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (!isInGroup)
+              Card(
+                color: Colors.orange.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'You need to be a member of this group to mark attendance',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(
-                  onPressed: () => _markAttendance(true),
-                  child: const Text("Mark as Attended"),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : () => _markAttendance(true),
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text("Mark as Attended"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () => _markAttendance(false),
-                  child: const Text("Mark as Not Attended"),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : () => _markAttendance(false),
+                      icon: const Icon(Icons.cancel),
+                      label: const Text("Mark as Not Attended"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:church_app/services/groupServices.dart';
+import '../widgets/notification_overlay.dart';
+import '../widgets/custom_notification.dart';
 
 class User {
   final String id;
@@ -56,7 +58,12 @@ class _UserManagementState extends State<UserManagement> {
         _isLoading = false;
       });
     } catch (e) {
-      _showError('Failed to fetch data: $e');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: 'Failed to fetch data: $e',
+          type: NotificationType.error,
+        );
+      }
       setState(() {
         _isLoading = false;
       });
@@ -76,12 +83,24 @@ class _UserManagementState extends State<UserManagement> {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            const Text('Confirm Delete'),
+          ],
+        ),
         content: Text('Are you sure you want to delete ${user.name}?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.blue.shade700),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -98,9 +117,19 @@ class _UserManagementState extends State<UserManagement> {
         setState(() {
           users.remove(user);
         });
-        _showSuccess('User ${user.name} deleted successfully');
+        if (mounted) {
+          NotificationOverlay.of(context).showNotification(
+            message: 'User ${user.name} deleted successfully',
+            type: NotificationType.success,
+          );
+        }
       } catch (e) {
-        _showError('Failed to delete user ${user.name}');
+        if (mounted) {
+          NotificationOverlay.of(context).showNotification(
+            message: 'Failed to delete user ${user.name}',
+            type: NotificationType.error,
+          );
+        }
       }
     }
   }
@@ -118,9 +147,19 @@ class _UserManagementState extends State<UserManagement> {
           group: newGroup,
         );
       });
-      _showSuccess('${user.name} assigned to $newGroup');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: '${user.name} assigned to $newGroup',
+          type: NotificationType.success,
+        );
+      }
     } catch (e) {
-      _showError('Failed to assign ${user.name} to $newGroup');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: 'Failed to assign ${user.name} to $newGroup',
+          type: NotificationType.error,
+        );
+      }
     }
   }
 
@@ -137,28 +176,20 @@ class _UserManagementState extends State<UserManagement> {
           group: user.group,
         );
       });
-      _showSuccess('${user.name}\'s role updated to $newRole');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: '${user.name}\'s role updated to $newRole',
+          type: NotificationType.success,
+        );
+      }
     } catch (e) {
-      _showError('Failed to update role for ${user.name}');
+      if (mounted) {
+        NotificationOverlay.of(context).showNotification(
+          message: 'Failed to update role for ${user.name}',
+          type: NotificationType.error,
+        );
+      }
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 
   Color _getRoleColor(String role) {
@@ -178,12 +209,35 @@ class _UserManagementState extends State<UserManagement> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("User Management"),
+        title: Text(
+          "User Management",
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         elevation: 0,
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading users...',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _fetchData,
               child: Column(
@@ -195,7 +249,7 @@ class _UserManagementState extends State<UserManagement> {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           spreadRadius: 1,
                           blurRadius: 3,
                           offset: const Offset(0, 2),
@@ -205,14 +259,15 @@ class _UserManagementState extends State<UserManagement> {
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: "Search by Name or Email",
-                        prefixIcon: const Icon(Icons.search),
+                        prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: Colors.blue.shade50,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        hintStyle: TextStyle(color: Colors.blue.shade300),
                       ),
                       onChanged: (value) {
                         setState(() {
@@ -228,11 +283,19 @@ class _UserManagementState extends State<UserManagement> {
                       itemCount: filteredUsers.length,
                       itemBuilder: (context, index) {
                         final user = filteredUsers[index];
-                        return Card(
+                        return Container(
                           margin: const EdgeInsets.only(bottom: 16),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -241,13 +304,18 @@ class _UserManagementState extends State<UserManagement> {
                               children: [
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      backgroundColor: Colors.blue.shade100,
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        shape: BoxShape.circle,
+                                      ),
                                       child: Text(
                                         user.name[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.blue,
+                                        style: TextStyle(
+                                          color: Colors.blue.shade700,
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 18,
                                         ),
                                       ),
                                     ),
@@ -258,15 +326,16 @@ class _UserManagementState extends State<UserManagement> {
                                         children: [
                                           Text(
                                             user.name,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade700,
                                             ),
                                           ),
                                           Text(
                                             user.email,
                                             style: TextStyle(
-                                              color: Colors.grey.shade600,
+                                              color: Colors.blue.shade700,
                                               fontSize: 14,
                                             ),
                                           ),
@@ -275,18 +344,19 @@ class _UserManagementState extends State<UserManagement> {
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
+                                        horizontal: 12,
+                                        vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
                                         color: _getRoleColor(user.role).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
                                         user.role,
                                         style: TextStyle(
                                           color: _getRoleColor(user.role),
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
@@ -298,57 +368,86 @@ class _UserManagementState extends State<UserManagement> {
                                   children: [
                                     // Role Update Dropdown
                                     Expanded(
-                                      child: DropdownButtonFormField<String>(
-                                        value: user.role,
-                                        decoration: InputDecoration(
-                                          labelText: 'Role',
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.blue.shade200),
                                         ),
-                                        items: ['super admin', 'admin', 'user']
-                                            .map((role) => DropdownMenuItem(
-                                                  value: role,
-                                                  child: Text(role),
-                                                ))
-                                            .toList(),
-                                        onChanged: (newRole) {
-                                          if (newRole != null) {
-                                            _onUpdateRole(user, newRole);
-                                          }
-                                        },
+                                        child: DropdownButtonFormField<String>(
+                                          value: user.role,
+                                          decoration: InputDecoration(
+                                            labelText: 'Role',
+                                            labelStyle: TextStyle(color: Colors.blue.shade700),
+                                            border: InputBorder.none,
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                          ),
+                                          items: ['super admin', 'admin', 'user']
+                                              .map((role) => DropdownMenuItem(
+                                                    value: role,
+                                                    child: Text(
+                                                      role,
+                                                      style: TextStyle(color: Colors.blue.shade700),
+                                                    ),
+                                                  ))
+                                              .toList(),
+                                          onChanged: (newRole) {
+                                            if (newRole != null) {
+                                              _onUpdateRole(user, newRole);
+                                            }
+                                          },
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     // Group Assignment Dropdown
                                     Expanded(
-                                      child: DropdownButtonFormField<String>(
-                                        value: user.group,
-                                        decoration: InputDecoration(
-                                          labelText: 'Group',
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.blue.shade200),
                                         ),
-                                        items: groups.map<DropdownMenuItem<String>>((group) {
-                                          return DropdownMenuItem<String>(
-                                            value: group['id'],
-                                            child: Text(group['name']),
-                                          );
-                                        }).toList(),
-                                        onChanged: (newGroup) {
-                                          if (newGroup != null) {
-                                            _onAssignGroup(user, newGroup);
-                                          }
-                                        },
+                                        child: DropdownButtonFormField<String>(
+                                          value: user.group,
+                                          decoration: InputDecoration(
+                                            labelText: 'Group',
+                                            labelStyle: TextStyle(color: Colors.blue.shade700),
+                                            border: InputBorder.none,
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                          ),
+                                          items: groups.map<DropdownMenuItem<String>>((group) {
+                                            return DropdownMenuItem<String>(
+                                              value: group['id'],
+                                              child: Text(
+                                                group['name'],
+                                                style: TextStyle(color: Colors.blue.shade700),
+                                              ),
+                                            );
+                                          }).toList(),
+                                          onChanged: (newGroup) {
+                                            if (newGroup != null) {
+                                              _onAssignGroup(user, newGroup);
+                                            }
+                                          },
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     // Delete Button
-                                    IconButton(
-                                      onPressed: () => _onDeleteUser(user),
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      tooltip: 'Delete User',
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.red.shade200),
+                                      ),
+                                      child: IconButton(
+                                        onPressed: () => _onDeleteUser(user),
+                                        icon: Icon(Icons.delete, color: Colors.red.shade700),
+                                        tooltip: 'Delete User',
+                                      ),
                                     ),
                                   ],
                                 ),

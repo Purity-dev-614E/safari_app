@@ -3,6 +3,8 @@ import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'adminEventList.dart';
+import '../widgets/notification_overlay.dart';
+import '../widgets/custom_notification.dart';
 
 class SuperSettings extends StatefulWidget {
   const SuperSettings({super.key});
@@ -16,6 +18,7 @@ class _SuperSettingsState extends State<SuperSettings> {
   bool allowProfileEdits = true;
   String? superAdminUserId;
   bool isLoading = true;
+  bool isRefreshing = false;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
@@ -40,37 +43,52 @@ class _SuperSettingsState extends State<SuperSettings> {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
       return userDetails['role'] == 'super_admin';
     } catch (e) {
-      _showError('Failed to fetch user details: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch user details: $e',
+        type: NotificationType.error,
+      );
       return false;
     }
   }
 
   Future<void> _fetchGroups() async {
     if (!await _isSuperAdmin()) {
-      _showError('You do not have permission to view this page');
+      NotificationOverlay.of(context).showNotification(
+        message: 'You do not have permission to view this page',
+        type: NotificationType.error,
+      );
       return;
     }
 
+    setState(() {
+      isRefreshing = true;
+    });
+
     try {
-      setState(() {
-        isLoading = true;
-      });
       List<dynamic> groupData = await _groupService.getAllGroups();
       setState(() {
         groups = groupData ?? [];
         isLoading = false;
+        isRefreshing = false;
       });
     } catch (e) {
       setState(() {
         isLoading = false;
+        isRefreshing = false;
       });
-      _showError('Failed to fetch groups: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch groups: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
   Future<void> _createGroup(String groupName) async {
     if (!await _isSuperAdmin()) {
-      _showError('You do not have permission to create groups');
+      NotificationOverlay.of(context).showNotification(
+        message: 'You do not have permission to create groups',
+        type: NotificationType.error,
+      );
       return;
     }
 
@@ -78,15 +96,24 @@ class _SuperSettingsState extends State<SuperSettings> {
       await _groupService.createGroup({'name': groupName});
       await _fetchGroups();
       Navigator.pop(context);
-      _showSuccess('Group created successfully');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Group created successfully',
+        type: NotificationType.success,
+      );
     } catch (e) {
-      _showError('Failed to create group: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to create group: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
   Future<void> _deleteGroup(String groupId) async {
     if (!await _isSuperAdmin()) {
-      _showError('You do not have permission to delete groups');
+      NotificationOverlay.of(context).showNotification(
+        message: 'You do not have permission to delete groups',
+        type: NotificationType.error,
+      );
       return;
     }
 
@@ -94,9 +121,15 @@ class _SuperSettingsState extends State<SuperSettings> {
       await _groupService.deleteGroup(groupId);
       await _fetchGroups();
       Navigator.pop(context);
-      _showSuccess('Group deleted successfully');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Group deleted successfully',
+        type: NotificationType.success,
+      );
     } catch (e) {
-      _showError('Failed to delete group: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to delete group: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -106,27 +139,69 @@ class _SuperSettingsState extends State<SuperSettings> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Create Group"),
+          title: Row(
+            children: [
+              Icon(
+                Icons.group_add,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "Create Group",
+                style: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: "Enter Group Name",
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.blue.shade200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.blue.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.blue.shade50,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.blue.shade700),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
                 if (controller.text.isNotEmpty) {
                   _createGroup(controller.text);
                 } else {
-                  _showError('Group name cannot be empty');
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Group name cannot be empty',
+                    type: NotificationType.error,
+                  );
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text("Create"),
             ),
           ],
@@ -139,12 +214,31 @@ class _SuperSettingsState extends State<SuperSettings> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Delete $groupName"),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red.shade700,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Delete $groupName",
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         content: const Text("Are you sure you want to delete this group? This action cannot be undone."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: Colors.blue.shade700),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -152,8 +246,11 @@ class _SuperSettingsState extends State<SuperSettings> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.red.shade700,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text("Delete Group"),
           ),
@@ -164,7 +261,10 @@ class _SuperSettingsState extends State<SuperSettings> {
 
   Future<void> _toggleProfileEdits(bool value) async {
     if (!await _isSuperAdmin()) {
-      _showError('You do not have permission to change this setting');
+      NotificationOverlay.of(context).showNotification(
+        message: 'You do not have permission to change this setting',
+        type: NotificationType.error,
+      );
       return;
     }
 
@@ -173,9 +273,15 @@ class _SuperSettingsState extends State<SuperSettings> {
       setState(() {
         allowProfileEdits = value;
       });
-      _showSuccess('Profile edit settings updated');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Profile edit settings updated',
+        type: NotificationType.success,
+      );
     } catch (e) {
-      _showError('Failed to update profile edit settings: $e');
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to update profile edit settings: $e',
+        type: NotificationType.error,
+      );
     }
   }
 
@@ -186,25 +292,73 @@ class _SuperSettingsState extends State<SuperSettings> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Assign Admin to Group'),
+          title: Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Assign Admin to Group',
+                style: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (currentAdminName != 'None')
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    'Current Admin: $currentAdminName',
-                    style: TextStyle(fontStyle: FontStyle.italic),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Current Admin: $currentAdminName',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              const SizedBox(height: 16),
               TextField(
                 controller: fullnameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "Enter admin's email",
                   labelText: "Admin's Email",
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.blue.shade200),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.blue.shade200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.blue.shade50,
                 ),
               ),
             ],
@@ -212,7 +366,10 @@ class _SuperSettingsState extends State<SuperSettings> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.blue.shade700),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -230,11 +387,24 @@ class _SuperSettingsState extends State<SuperSettings> {
                   await _userService.assignAdminToGroup(groupId, user['id']);
                   Navigator.pop(context);
                   await _fetchGroups();
-                  _showSuccess('Admin assigned successfully');
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Admin assigned successfully',
+                    type: NotificationType.success,
+                  );
                 } catch (e) {
-                  _showError('Failed to assign admin: $e');
+                  NotificationOverlay.of(context).showNotification(
+                    message: 'Failed to assign admin: $e',
+                    type: NotificationType.error,
+                  );
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Assign'),
             ),
           ],
@@ -243,106 +413,248 @@ class _SuperSettingsState extends State<SuperSettings> {
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Super Admin Settings"),
+        title: Text(
+          "Super Admin Settings",
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchGroups,
+            onPressed: isRefreshing ? null : _fetchGroups,
+            icon: isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Icon(
+                    Icons.refresh,
+                    color: Colors.blue.shade700,
+                  ),
           ),
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+          ? Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Group Management Section
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
                   Text(
-                    'Group Management',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _showCreateGroupDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create New Group'),
-                  ),
-                  const SizedBox(height: 16),
-                  ...groups.map((group) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(group['name'] ?? ''),
-                      subtitle: Text('Admin: ${group['admin_name'] ?? 'None'}'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminEventList(groupId: group['id'] ?? ''),
-                          ),
-                        );
-                      },
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.admin_panel_settings),
-                            onPressed: () => _showAssignAdminDialog(
-                              group['id'] ?? '',
-                              group['admin_name'] ?? 'None',
-                            ),
-                            tooltip: 'Assign Admin',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _showDeleteGroupDialog(
-                              group['id'] ?? '',
-                              group['name'] ?? '',
-                            ),
-                            tooltip: 'Delete Group',
-                          ),
-                        ],
-                      ),
+                    'Loading settings...',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 16,
                     ),
-                  )),
-                  const SizedBox(height: 24),
-                  
-                  // System Settings Section
-                  Text(
-                    'System Settings',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: const Text('Allow Profile Edits'),
-                    subtitle: const Text('Enable or disable user profile editing'),
-                    value: allowProfileEdits,
-                    onChanged: _toggleProfileEdits,
                   ),
                 ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchGroups,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Group Management Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.1),
+                              spreadRadius: 5,
+                              blurRadius: 15,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.group,
+                                  color: Colors.blue.shade700,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Group Management',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _showCreateGroupDialog,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Create New Group'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade700,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ...groups.map((group) => Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.blue.shade200),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                title: Text(
+                                  group['name'] ?? '',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                                subtitle: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.admin_panel_settings,
+                                      size: 16,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Admin: ${group['admin_name'] ?? 'None'}',
+                                      style: TextStyle(
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AdminEventList(groupId: group['id'] ?? ''),
+                                    ),
+                                  );
+                                },
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.admin_panel_settings,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                      onPressed: () => _showAssignAdminDialog(
+                                        group['id'] ?? '',
+                                        group['admin_name'] ?? 'None',
+                                      ),
+                                      tooltip: 'Assign Admin',
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Colors.red.shade700,
+                                      ),
+                                      onPressed: () => _showDeleteGroupDialog(
+                                        group['id'] ?? '',
+                                        group['name'] ?? '',
+                                      ),
+                                      tooltip: 'Delete Group',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // System Settings Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.1),
+                              spreadRadius: 5,
+                              blurRadius: 15,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.settings,
+                                  color: Colors.blue.shade700,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'System Settings',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SwitchListTile(
+                              title: Text(
+                                'Allow Profile Edits',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Enable or disable user profile editing',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700.withOpacity(0.7),
+                                ),
+                              ),
+                              value: allowProfileEdits,
+                              onChanged: _toggleProfileEdits,
+                              activeColor: Colors.blue.shade700,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
     );
