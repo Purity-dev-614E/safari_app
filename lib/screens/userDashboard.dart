@@ -19,11 +19,11 @@ class _UserDashboardState extends State<UserDashboard> {
   bool _isLoading = true;
 
   final UserService _userService = UserService(
-      baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+      baseUrl: 'https://safari-backend.on.shiper.app/api/users');
   final EventService _eventService = EventService(
-      baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+      baseUrl: 'https://safari-backend.on.shiper.app/api');
   final GroupService _groupService = GroupService(
-      baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+      baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   @override
   void initState() {

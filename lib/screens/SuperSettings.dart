@@ -16,8 +16,8 @@ class _SuperSettingsState extends State<SuperSettings> {
   bool allowProfileEdits = true;
   String? superAdminUserId;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
 
   @override
   void initState() {

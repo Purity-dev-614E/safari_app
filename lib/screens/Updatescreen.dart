@@ -20,7 +20,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _nextOfKinContact;
   String? _phoneNumber;
 
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
 
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {

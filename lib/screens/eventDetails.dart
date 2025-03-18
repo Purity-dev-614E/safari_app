@@ -12,7 +12,7 @@ class EventDetails extends StatefulWidget {
 }
 
 class _EventDetailsState extends State<EventDetails> {
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   String? userId;
 
   @override

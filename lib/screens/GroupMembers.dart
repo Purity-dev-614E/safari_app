@@ -15,7 +15,7 @@ class _GroupMembersState extends State<GroupMembers> {
   String? groupId;
   bool isLoading = true;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   @override
   void initState() {
@@ -235,7 +235,7 @@ class AddMemberScreen extends StatefulWidget {
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   Future<void> _addMember() async {
     try {
@@ -296,7 +296,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _roleController = TextEditingController();
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   @override
   void initState() {

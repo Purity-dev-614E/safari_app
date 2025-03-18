@@ -15,7 +15,7 @@ class _SignupState extends State<Signup> {
   bool isLoading = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');  // Initialize AuthService with your base URL
+  final AuthService authService = AuthService(baseUrl: 'https://safari-backend.on.shiper.app/api');  // Initialize AuthService with your base URL
 
   Future<void> _signup() async {
     if (_formKey.currentState!.validate()) {

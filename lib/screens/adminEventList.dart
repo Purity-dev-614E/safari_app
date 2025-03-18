@@ -13,7 +13,7 @@ class AdminEventList extends StatefulWidget {
 }
 
 class _AdminEventListState extends State<AdminEventList> {
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   List<dynamic> _events = [];
 
   @override
@@ -69,7 +69,7 @@ class AddEventsScreen extends StatefulWidget {
 
 class _AddEventsScreenState extends State<AddEventsScreen> {
 
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();

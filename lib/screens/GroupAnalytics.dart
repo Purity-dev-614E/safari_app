@@ -21,10 +21,10 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
   String? groupId;
   bool isLoading = true;
 
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   @override
   void initState() {

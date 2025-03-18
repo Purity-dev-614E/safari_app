@@ -20,9 +20,9 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
   String? superAdminUserId;
   bool _isLoading = true;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
 
   @override
   void initState() {

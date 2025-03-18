@@ -16,8 +16,8 @@ class _LoginState extends State<Login> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final AuthService authService = AuthService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');// Initialize AuthService with your base URL
-  final UserService userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  final AuthService authService = AuthService(baseUrl: 'https://safari-backend.on.shiper.app/api');// Initialize AuthService with your base URL
+  final UserService userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
   final storage = const FlutterSecureStorage();
   Future<void> _login() async {
     final email = emailController.text;

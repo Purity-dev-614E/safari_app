@@ -18,9 +18,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   String? superAdminUserId;
   bool _isLoading = true;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
-  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend.on.shiper.app/api');
 
   @override
   void initState() {

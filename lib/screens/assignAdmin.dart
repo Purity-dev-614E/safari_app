@@ -15,8 +15,8 @@ class AssignGroupAdminScreen extends StatefulWidget {
 
 class _AssignGroupAdminScreenState extends State<AssignGroupAdminScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api');
+  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
+  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   List<dynamic> _searchResults = [];
   bool _isLoading = false;
 
