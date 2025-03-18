@@ -322,18 +322,16 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
       await _groupService.updateGroup(
         widget.memberId,
         {
-          'name': _nameController.text,
-          'email': _emailController.text,
           'role': _roleController.text,
         },
       );
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Member updated successfully')),
+        SnackBar(content: Text('Member role updated successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update member: $e')),
+        SnackBar(content: Text('Failed to update member role: $e')),
       );
     }
   }
@@ -342,14 +340,16 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Member"),
+        title: const Text("Edit Member Role"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _nameController,
+              enabled: false,
               decoration: const InputDecoration(
                 labelText: "Name",
                 border: OutlineInputBorder(),
@@ -358,6 +358,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
+              enabled: false,
               decoration: const InputDecoration(
                 labelText: "Email",
                 border: OutlineInputBorder(),
@@ -369,12 +370,15 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
               decoration: const InputDecoration(
                 labelText: "Role",
                 border: OutlineInputBorder(),
+                helperText: "You can only modify the member's role",
               ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _updateMember,
-              child: const Text("Update Member"),
+            const SizedBox(height: 24),
+            Center(
+              child: ElevatedButton(
+                onPressed: _updateMember,
+                child: const Text("Update Role"),
+              ),
             ),
           ],
         ),

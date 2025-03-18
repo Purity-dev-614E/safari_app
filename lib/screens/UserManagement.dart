@@ -29,10 +29,10 @@ class _UserManagementState extends State<UserManagement> {
   List<User> users = [];
   List<dynamic> groups = [];
   String searchQuery = '';
+  bool _isLoading = true;
 
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _UserManagementState extends State<UserManagement> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Failed to fetch data: $e');
+      _showError('Failed to fetch data: $e');
       setState(() {
         _isLoading = false;
       });
@@ -73,18 +73,35 @@ class _UserManagementState extends State<UserManagement> {
   }
 
   Future<void> _onDeleteUser(User user) async {
-    try {
-      await _userService.deleteUser(user.id);
-      setState(() {
-        users.remove(user);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("User ${user.name} deleted")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to delete user ${user.name}")),
-      );
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: Text('Are you sure you want to delete ${user.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _userService.deleteUser(user.id);
+        setState(() {
+          users.remove(user);
+        });
+        _showSuccess('User ${user.name} deleted successfully');
+      } catch (e) {
+        _showError('Failed to delete user ${user.name}');
+      }
     }
   }
 
@@ -101,13 +118,59 @@ class _UserManagementState extends State<UserManagement> {
           group: newGroup,
         );
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${user.name} assigned to $newGroup")),
-      );
+      _showSuccess('${user.name} assigned to $newGroup');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to assign ${user.name} to $newGroup")),
-      );
+      _showError('Failed to assign ${user.name} to $newGroup');
+    }
+  }
+
+  Future<void> _onUpdateRole(User user, String newRole) async {
+    try {
+      await _userService.updateUserRole(user.id, newRole);
+      setState(() {
+        int index = users.indexOf(user);
+        users[index] = User(
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: newRole,
+          group: user.group,
+        );
+      });
+      _showSuccess('${user.name}\'s role updated to $newRole');
+    } catch (e) {
+      _showError('Failed to update role for ${user.name}');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'super admin':
+        return Colors.purple;
+      case 'admin':
+        return Colors.blue;
+      case 'user':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -116,71 +179,189 @@ class _UserManagementState extends State<UserManagement> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("User Management"),
+        elevation: 0,
+        backgroundColor: Colors.blue,
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Search by Name or Email",
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
-            ),
-          ),
-          // User List
-          Expanded(
-            child: ListView.builder(
-              itemCount: filteredUsers.length,
-              itemBuilder: (context, index) {
-                final user = filteredUsers[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  child: ListTile(
-                    title: Text(user.name),
-                    subtitle: Text("${user.email} • ${user.role} • ${user.group}"),
-                    trailing: Wrap(
-                      spacing: 8,
-                      children: [
-                        // Delete Button
-                        IconButton(
-                          onPressed: () => _onDeleteUser(user),
-                          icon: Icon(Icons.delete, color: Colors.red),
-                        ),
-                        // Assign Group Dropdown
-                        DropdownButton<String>(
-                          underline: const SizedBox(),
-                          icon: const Icon(Icons.group, color: Colors.green),
-                          onChanged: (newGroup) {
-                            if (newGroup != null) _onAssignGroup(user, newGroup);
-                          },
-                          items: groups.map<DropdownMenuItem<String>>((dynamic group) {
-                            return DropdownMenuItem<String>(
-                              value: group['id'],
-                              child: Text(group['name']),
-                            );
-                          }).toList(),
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _fetchData,
+              child: Column(
+                children: [
+                  // Search Bar
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Search by Name or Email",
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value;
+                        });
+                      },
+                    ),
                   ),
-                );
-              },
+                  // User List
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = filteredUsers[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Colors.blue.shade100,
+                                      child: Text(
+                                        user.name[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user.name,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            user.email,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getRoleColor(user.role).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        user.role,
+                                        style: TextStyle(
+                                          color: _getRoleColor(user.role),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Role Update Dropdown
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: user.role,
+                                        decoration: InputDecoration(
+                                          labelText: 'Role',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        items: ['super admin', 'admin', 'user']
+                                            .map((role) => DropdownMenuItem(
+                                                  value: role,
+                                                  child: Text(role),
+                                                ))
+                                            .toList(),
+                                        onChanged: (newRole) {
+                                          if (newRole != null) {
+                                            _onUpdateRole(user, newRole);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Group Assignment Dropdown
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        value: user.group,
+                                        decoration: InputDecoration(
+                                          labelText: 'Group',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        items: groups.map<DropdownMenuItem<String>>((group) {
+                                          return DropdownMenuItem<String>(
+                                            value: group['id'],
+                                            child: Text(group['name']),
+                                          );
+                                        }).toList(),
+                                        onChanged: (newGroup) {
+                                          if (newGroup != null) {
+                                            _onAssignGroup(user, newGroup);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Delete Button
+                                    IconButton(
+                                      onPressed: () => _onDeleteUser(user),
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: 'Delete User',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
     );
   }
 }

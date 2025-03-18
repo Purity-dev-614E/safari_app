@@ -19,6 +19,7 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
   List<dynamic>? groups;
   String? superAdminUserId;
   bool _isLoading = true;
+  String? selectedGroupId;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend.on.shiper.app/api');
@@ -55,22 +56,32 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       // Fetch groups
       List<dynamic> fetchedGroups = await _groupService.getAllGroups();
 
+      // If no group is selected and groups are available, select the first one
+      if (selectedGroupId == null && fetchedGroups.isNotEmpty) {
+        selectedGroupId = fetchedGroups[0]['id'];
+      }
+
       // Fetch attendance data for the selected time period
       Map<String, dynamic>? fetchedAttendanceData = await _analyticsService.getAttendanceByTimePeriod(selectedTimePeriod);
 
-      // Fetch group demographics
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final id = prefs.getString('group_id');
-      List<dynamic>? fetchedGroupDemographics = await _analyticsService.getGroupDemographics(id!);
+      // Fetch group demographics for the selected group
+      List<dynamic>? fetchedGroupDemographics = [];
+      if (selectedGroupId != null) {
+        fetchedGroupDemographics = await _analyticsService.getGroupDemographics(selectedGroupId!);
+      }
 
       setState(() {
-        groups = fetchedGroups ?? [];
-        attendanceData = fetchedAttendanceData ?? {};
-        groupDemographics = fetchedGroupDemographics ?? [];
+        groups = fetchedGroups;
+        attendanceData = fetchedAttendanceData;
+        groupDemographics = fetchedGroupDemographics;
         _isLoading = false;
       });
     } catch (e) {
@@ -83,7 +94,255 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Widget _buildTimePeriodSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Time Period',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: selectedTimePeriod,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+            ),
+            items: [
+              DropdownMenuItem(value: 'week', child: const Text('Last Week')),
+              DropdownMenuItem(value: 'month', child: const Text('Last Month')),
+              DropdownMenuItem(value: 'year', child: const Text('Last Year')),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  selectedTimePeriod = value;
+                });
+                _fetchAnalytics();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select Group',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: selectedGroupId,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+            ),
+            items: groups != null && groups!.isNotEmpty
+                ? groups!.map<DropdownMenuItem<String>>((group) {
+              return DropdownMenuItem<String>(
+                value: group['id'],
+                child: Text(group['name']),
+              );
+            }).toList()
+                : [
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('No groups available'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  selectedGroupId = value;
+                });
+                _fetchAnalytics();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildAttendanceChart() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Attendance Trends',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 300,
+            child: attendanceData != null && attendanceData!['attendance_trends'] != null
+                ? LineChart(
+              LineChartData(
+                gridData: FlGridData(show: true),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: true),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: true),
+                  ),
+                ),
+                borderData: FlBorderData(show: true),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: (attendanceData!['attendance_trends'] as List<dynamic>)
+                        .map((data) => FlSpot(
+                      (data['time'] as num).toDouble(),
+                      (data['count'] as num).toDouble(),
+                    ))
+                        .toList(),
+                    isCurved: true,
+                    color: Colors.blue,
+                    barWidth: 3,
+                    dotData: FlDotData(show: true),
+                  ),
+                ],
+              ),
+            )
+                : const Center(
+              child: Text(
+                'No attendance data available',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDemographicsChart() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Group Demographics',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 300,
+            child: groupDemographics != null && groupDemographics!.isNotEmpty
+                ? PieChart(
+              PieChartData(
+                sections: groupDemographics!.map<PieChartSectionData>((data) {
+                  return PieChartSectionData(
+                    value: (data['count'] as num).toDouble(),
+                    color: Colors.primaries[groupDemographics!.indexOf(data) % Colors.primaries.length],
+                    title: data['group_name'],
+                    radius: 50,
+                  );
+                }).toList(),
+              ),
+            )
+                : const Center(
+              child: Text(
+                'No demographics data available',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -91,94 +350,21 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Analytics"),
+        title: const Text('Super Admin Analytics'),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Select Time Period',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8.0),
-            DropdownButtonFormField<String>(
-              value: selectedTimePeriod,
-              decoration: InputDecoration(
-                labelText: 'Time Period',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              items: ['week', 'month', 'year'].map((String period) {
-                return DropdownMenuItem<String>(
-                  value: period,
-                  child: Text(period),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedTimePeriod = value;
-                    _fetchAnalytics();
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Attendance Trends",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: attendanceData != null && attendanceData!['attendance_trends'] != null
-                  ? LineChart(LineChartData(
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: (attendanceData!['attendance_trends'] as List<dynamic>)
-                        .map((data) => FlSpot((data['time'] as num).toDouble(), (data['count'] as num).toDouble()))
-                        .toList(),
-                  ),
-                ],
-              ))
-                  : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Group Demographics",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: groupDemographics != null
-                  ? PieChart(PieChartData(
-                sections: groupDemographics!.map<PieChartSectionData>((data) {
-                  return PieChartSectionData(
-                    value: (data['value'] as num).toDouble(),
-                    color: Color(int.parse(data['color'] ?? '0xffcccccc')),
-                    title: '${data['value']}%',
-                  );
-                }).toList(),
-              ))
-                  : Center(child: const Text('Loading...', style: TextStyle(color: Colors.grey))),
-            ),
+            _buildTimePeriodSelector(),
+            const SizedBox(height: 16),
+            _buildGroupSelector(),
+            const SizedBox(height: 16),
+            _buildAttendanceChart(),
+            const SizedBox(height: 16),
+            _buildDemographicsChart(),
           ],
         ),
       ),

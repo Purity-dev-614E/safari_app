@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
 
-
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});
 
@@ -19,6 +18,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _nextOfKin;
   String? _nextOfKinContact;
   String? _phoneNumber;
+  bool _isLoading = false;
 
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
 
@@ -26,6 +26,10 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      setState(() {
+        _isLoading = true;
+      });
 
       try {
         final response = await _userService.updateUser({
@@ -38,71 +42,197 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           'phone_number': _phoneNumber,
         });
 
-        print('Response from updateUser: $response');
-
         if (response.containsKey('id') && response['role'] != null) {
           await prefs.setString('full_name', _fullName!);
           await prefs.setString('user_role', _role!);
 
-          switch (response['role']) {
-            case 'super admin':
-              Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
-              break;
-            case 'admin':
-              Navigator.pushReplacementNamed(context, '/adminDashboard');
-              break;
-            case 'user':
-              Navigator.pushReplacementNamed(context, '/userDashboard');
-              break;
-            default:
-              Navigator.pushReplacementNamed(context, '/login');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile updated successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            // Navigate based on role
+            switch (response['role']) {
+              case 'super admin':
+                Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
+                break;
+              case 'admin':
+                Navigator.pushReplacementNamed(context, '/adminDashboard');
+                break;
+              case 'user':
+                Navigator.pushReplacementNamed(context, '/userDashboard');
+                break;
+              default:
+                Navigator.pushReplacementNamed(context, '/login');
+            }
           }
         } else {
-          print('Failed to update profile because: ${response['message']}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to update profile: ${response['message']}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
-        print('Failed to update profile why?: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update profile: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Update Profile")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              _buildTextField("Full Name", (value) => _fullName = value),
-              _buildTextField('Role', (value) => _role = value),
-              _buildTextField("Gender", (value) => _gender = value),
-              _buildTextField("Location", (value) => _location = value),
-              _buildTextField("Next of Kin", (value) => _nextOfKin = value),
-              _buildTextField("Next of Kin Contact", (value) => _nextOfKinContact = value),
-              _buildPhoneNumberField(),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _updateProfile,
-                child: const Text("Save Changes"),
-              ),
+      appBar: AppBar(
+        title: const Text("Update Profile"),
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.blue.shade50,
+              Colors.white,
             ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Personal Information',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    "Full Name",
+                    (value) => _fullName = value,
+                    icon: Icons.person,
+                  ),
+                  _buildTextField(
+                    'Role',
+                    (value) => _role = value,
+                    icon: Icons.work,
+                  ),
+                  _buildTextField(
+                    "Gender",
+                    (value) => _gender = value,
+                    icon: Icons.person_outline,
+                  ),
+                  _buildTextField(
+                    "Location",
+                    (value) => _location = value,
+                    icon: Icons.location_on,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Contact Information',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPhoneNumberField(),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Emergency Contact',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    "Next of Kin",
+                    (value) => _nextOfKin = value,
+                    icon: Icons.contact_phone,
+                  ),
+                  _buildNextOfKinNumberField(),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _updateProfile,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            "Save Changes",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, Function(String) onSave) {
+  Widget _buildTextField(String label, Function(String) onSave, {IconData? icon}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          prefixIcon: icon != null ? Icon(icon) : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -121,7 +251,21 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       child: TextFormField(
         decoration: InputDecoration(
           labelText: 'Phone Number',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          prefixIcon: const Icon(Icons.phone),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
         validator: (value) {
           if (value == null || !value.startsWith('+254')) {
@@ -139,8 +283,22 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         decoration: InputDecoration(
-          labelText: 'Phone Number',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          labelText: 'Next of Kin Phone Number',
+          prefixIcon: const Icon(Icons.phone),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blue, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
         validator: (value) {
           if (value == null || !value.startsWith('+254')) {

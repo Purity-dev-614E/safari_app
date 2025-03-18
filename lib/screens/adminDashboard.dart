@@ -90,9 +90,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<String> _fetchGroupIdByName(String groupName) async {
     try {
       final group = await _groupService.getGroupByName(groupName);
+      
+      // Check if the current user is an admin of this group
+      if (adminUserId == null) {
+        throw Exception('Admin user ID not found');
+      }
+      
+      // Check if the current user is in the admins list
+      List<dynamic> admins = group['admins'] ?? [];
+      bool isAdmin = admins.any((admin) => admin['id'] == adminUserId);
+      
+      if (!isAdmin) {
+        throw Exception('You are not an admin of this group');
+      }
+      
       return group['id'];
     } catch (e) {
-      throw Exception('Failed to fetch group ID by name: $e');
+      // Show error dialog to the user
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text(e.toString().contains('not an admin') 
+              ? 'You are not an admin of this group. Please enter a group where you are an admin.'
+              : 'Failed to fetch group: ${e.toString()}'),
+            actions: <Widget>[
+              ElevatedButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+      throw e;
     }
   }
 

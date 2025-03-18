@@ -4,6 +4,7 @@ import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
+import 'package:intl/intl.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -17,6 +18,9 @@ class _UserDashboardState extends State<UserDashboard> {
   String _nextEvent = "";
   List<dynamic> _upcomingEvents = [];
   bool _isLoading = true;
+  String? _userName;
+  String? _userRole;
+  String? _userGroup;
 
   final UserService _userService = UserService(
       baseUrl: 'https://safari-backend.on.shiper.app/api/users');
@@ -34,7 +38,9 @@ class _UserDashboardState extends State<UserDashboard> {
   Future<void> _fetchDashboardData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('user_id');
-    print('user id: $userId');
+    _userName = prefs.getString('full_name');
+    _userRole = prefs.getString('user_role');
+    
     if (userId == null) return;
 
     try {
@@ -49,6 +55,7 @@ class _UserDashboardState extends State<UserDashboard> {
         if (members.any((member) => member['id'] == userId)) {
           isInGroup = true;
           userGroupId = group['id'];
+          _userGroup = group['name'];
           _totalMembers = members.length;
           break;
         }
@@ -81,7 +88,10 @@ class _UserDashboardState extends State<UserDashboard> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
@@ -90,6 +100,8 @@ class _UserDashboardState extends State<UserDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard"),
+        elevation: 0,
+        backgroundColor: Colors.blue,
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -100,69 +112,254 @@ class _UserDashboardState extends State<UserDashboard> {
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Summary Cards
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSummaryCard("Total Members", _totalMembers.toString()),
-                _buildSummaryCard("Next Event", _nextEvent),
-              ],
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _fetchDashboardData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Welcome Section
+                      _buildWelcomeSection(),
+                      const SizedBox(height: 24),
+
+                      // Quick Stats Section
+                      _buildQuickStatsSection(),
+                      const SizedBox(height: 24),
+
+                      // Upcoming Events Section
+                      _buildUpcomingEventsSection(),
+                      const SizedBox(height: 24),
+
+                      // Group Information Section
+                      if (_userGroup != null) _buildGroupSection(),
+                    ],
+                  ),
+                ),
+              ),
             ),
+    );
+  }
 
-            const SizedBox(height: 20),
+  Widget _buildWelcomeSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade400, Colors.blue.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Welcome back,',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _userName ?? 'User',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _userRole?.toUpperCase() ?? '',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Upcoming Events List
+  Widget _buildQuickStatsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Stats',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: _upcomingEvents.length,
-                itemBuilder: (context, index) {
-                  return _buildEventCard(
-                    _upcomingEvents[index]['name'],
-                    _upcomingEvents[index]['date'],
-                    _upcomingEvents[index]['location'],
-                    _upcomingEvents[index],
-                  );
-                },
+              child: _buildStatCard(
+                'Total Members',
+                _totalMembers.toString(),
+                Icons.people,
+                Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'Upcoming Events',
+                _upcomingEvents.length.toString(),
+                Icons.event,
+                Colors.green,
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: color.withOpacity(0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
-  // Summary Card Widget
-  Widget _buildSummaryCard(String title, String value) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            Text(value, style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
+  Widget _buildUpcomingEventsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Upcoming Events',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        const SizedBox(height: 16),
+        if (_upcomingEvents.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Icon(Icons.event_busy, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No upcoming events',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _upcomingEvents.length,
+            itemBuilder: (context, index) {
+              final event = _upcomingEvents[index];
+              return _buildEventCard(
+                event['name'],
+                event['date'],
+                event['location'],
+                event,
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGroupSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your Group',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.group, color: Colors.blue.shade700),
+              const SizedBox(width: 8),
+              Text(
+                _userGroup!,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Total Members: $_totalMembers',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.blue.shade700,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // Event Card Widget
   Widget _buildEventCard(String eventName, String dateTime, String location, Map<String, dynamic> event) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        title: Text(eventName, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("$dateTime • $location"),
-        leading: const Icon(Icons.event, color: Colors.blue),
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
         onTap: () {
           Navigator.push(
             context,
@@ -171,6 +368,64 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.event, color: Colors.blue.shade700),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          eventName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          location,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Text(
+                    DateFormat('MMM dd, yyyy').format(DateTime.parse(dateTime)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

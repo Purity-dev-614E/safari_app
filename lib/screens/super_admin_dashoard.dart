@@ -224,54 +224,41 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blueGrey,
-              blurRadius: 4,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, '/UserManagement');
-              }, // Navigate to User Management screen
-              icon: Icon(Icons.people_outlined),
-              label: const Text("User Management"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-            ),
-
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, "/SuperSettings");
-              }, // Navigate to Group Management screen
-              icon: Icon(Icons.groups),
-              label: const Text("Group Management"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, "/SuperAnalytics");
-              }, // Navigate to Analytics screen
-              icon: Icon(Icons.analytics),
-              label: const Text("Analytics"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Users',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.groups_outlined),
+            activeIcon: Icon(Icons.groups),
+            label: 'Groups',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics_outlined),
+            activeIcon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+        ],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushNamed(context, '/UserManagement');
+              break;
+            case 1:
+              Navigator.pushNamed(context, "/SuperSettings");
+              break;
+            case 2:
+              Navigator.pushNamed(context, "/SuperAnalytics");
+              break;
+          }
+        },
       ),
     );
   }

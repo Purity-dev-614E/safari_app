@@ -14,6 +14,7 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   File? _image;
+  String? _imageUrl;
   final picker = ImagePicker();
   String? _full_name = '';
   String? _email = '';
@@ -23,25 +24,59 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
 
   Future<void> _pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70, // Compress image to reduce size
+      );
+      
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
 
-      try {
-        final imageUrl = await _userService.uploadProfilePicture(_image!);
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? userId = prefs.getString('user_id');
-        if (userId != null) {
-          await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
-          setState(() {
-            _image = File(imageUrl);
-          });
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+        );
+
+        try {
+          final imageUrl = await _userService.uploadProfilePicture(_image!);
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          String? userId = prefs.getString('user_id');
+          
+          if (userId != null) {
+            await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+            setState(() {
+              _imageUrl = imageUrl;
+            });
+            
+            // Hide loading indicator
+            Navigator.pop(context);
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile picture updated successfully')),
+            );
+          }
+        } catch (e) {
+          // Hide loading indicator
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload image: $e')),
+          );
         }
-      } catch (e) {
-        print('Failed to upload image: $e');
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
     }
   }
 
@@ -57,10 +92,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         _email = data['email'] ?? '';
         _location = data['location'] ?? '';
         _gender = data['gender'] ?? '';
-        _image = data['profile_picture'] != null ? File(data['profile_picture']) : null;
+        _imageUrl = data['profile_picture'];
       });
     } catch (e) {
-      print('Failed to fetch user info: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch user info: $e')),
+      );
     }
   }
 
@@ -80,12 +117,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           children: [
             GestureDetector(
               onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: _image != null ? FileImage(_image!) : null,
-                child: _image == null
-                    ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
-                    : null,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _image != null 
+                        ? FileImage(_image!) 
+                        : (_imageUrl != null && _imageUrl!.isNotEmpty
+                            ? NetworkImage(_imageUrl!) as ImageProvider
+                            : null),
+                    child: (_image == null && (_imageUrl == null || _imageUrl!.isEmpty))
+                        ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),

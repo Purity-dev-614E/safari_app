@@ -14,6 +14,7 @@ import 'package:church_app/services/userServices.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/screens/login.dart';
+import 'package:church_app/screens/userDashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -78,7 +79,7 @@ class MyApp extends StatelessWidget {
         '/SuperSettings': (context) => const SuperSettings(),
         '/userDashboard': (context) => const UserDashboard(),
         '/Profile': (context) => const UserProfileScreen(),
-        '/updateProfile': (context) => const UpdateProfileScreen(),
+        '/updateProfile': (context) => const UserProfileScreen(),
         '/adminDashboard': (context) => const AdminDashboard(),
         '/GroupMembers': (context) => const GroupMembers(),
         '/GroupAnalytics': (context) => const GroupAnalytics(),

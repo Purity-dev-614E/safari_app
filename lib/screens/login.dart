@@ -39,33 +39,36 @@ class _LoginState extends State<Login> {
         isLoading = false;
       });
 
-      // print(response['session']['user']['id']);
+      // Extract and store the user ID and role
+      await extractAndStoreUserData(response);
+      
+      // Store tokens in secure storage
+      final String accessToken = response['session']['access_token']!;
+      final String refreshToken = response['session']['refresh_token']!;
+      
+      await storage.write(key: 'auth_token', value: accessToken);
+      await storage.write(key: 'refresh_token', value: refreshToken);
 
-      // Extract and store the user ID
-      extractAndStoreUserId(response);
-      final String token = response['session']['access_token']!;
-
-      await storage.write(
-          key: 'auth_token',
-          value: token
-      );
+      // Get user role from shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? userId = prefs.getString('user_id');
+      String? role = prefs.getString('user_role');
 
-      final userData = await userService.getUserById(userId!);
-      print(userData['full_name']);
-      print(userData['role']);
-
-      if (userData['role'] != null ){
-
-       if(userData['role'] == 'user'){
-           Navigator.pushReplacementNamed(context, "/userDashboard");
-       }else if(userData['role'] == 'admin'){
-           Navigator.pushReplacementNamed(context, "/adminDashboard");
-       }else if(userData['role'] == 'super_admin'){
-           Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
-       }
-      }else {
+      // Navigate based on role
+      if (role != null) {
+        switch (role) {
+          case 'user':
+            Navigator.pushReplacementNamed(context, "/userDashboard");
+            break;
+          case 'admin':
+            Navigator.pushReplacementNamed(context, "/adminDashboard");
+            break;
+          case 'super_admin':
+            Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
+            break;
+          default:
+            Navigator.pushReplacementNamed(context, "/updateProfile");
+        }
+      } else {
         Navigator.pushReplacementNamed(context, "/updateProfile");
       }
 
@@ -77,15 +80,63 @@ class _LoginState extends State<Login> {
       _showError('Login failed: ${e.toString()}');
     }
   }
-  void extractAndStoreUserId(Map<String, dynamic> response) async {
+
+  Future<void> extractAndStoreUserData(Map<String, dynamic> response) async {
     final String userId = response['session']['user']['id']!;
-    // print('Extracted User ID: $userId');
+    final String role = response['session']['user']['role'] ?? '';
+    
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_id', userId);
+    await prefs.setString('user_role', role);
   }
 
+  Future<void> _resetPassword() async {
+    final email = emailController.text;
 
+    if (email.isEmpty) {
+      _showError('Please enter your email address');
+      return;
+    }
 
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      await authService.resetPassword(email);
+      
+      setState(() {
+        isLoading = false;
+      });
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Password Reset Email Sent'),
+            content: const Text(
+              'Please check your email for instructions to reset your password. '
+              'If you don\'t see the email, please check your spam folder.'
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      _showError('Failed to send reset email: ${e.toString()}');
+    }
+  }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -151,7 +202,20 @@ class _LoginState extends State<Login> {
                 ),
                 obscureText: true,
               ),
-              SizedBox(height: 40.0),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _resetPassword,
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20.0),
               isLoading
                   ? Center(
                 child: CircularProgressIndicator(

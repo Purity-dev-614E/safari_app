@@ -45,8 +45,6 @@ class UserService {
     }
   }
 
-
-
   Future<Map<String, dynamic>> getUserById(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
@@ -127,9 +125,6 @@ class UserService {
     }
   }
 
-  
-
-
   Future<void> deleteUser(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.delete(
@@ -175,6 +170,24 @@ class UserService {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to assign admin to group: ${response.body}');
+    }
+  }
+
+  Future<void> updateUserRole(String userId, String newRole) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.put(
+      Uri.parse('$baseUrl/$userId/role'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'role': newRole,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update user role: ${response.body}');
     }
   }
 }

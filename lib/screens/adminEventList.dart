@@ -90,6 +90,7 @@ class _AddEventsScreenState extends State<AddEventsScreen> {
        });
 
        if (response.containsKey('title') && response.containsKey('date') && response.containsKey('location')) {
+         await _addEvent();
          Navigator.pop(context);
        } else {
          throw Exception('Failed to add event');

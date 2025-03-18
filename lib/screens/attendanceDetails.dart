@@ -16,6 +16,9 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
   List<dynamic> _attendedMembers = [];
   List<dynamic> _notAttendedMembers = [];
+  bool isLoading = true;
+  String? eventName;
+  String? eventDate;
 
   @override
   void initState() {
@@ -25,6 +28,7 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
 
   Future<void> _fetchAttendanceDetails() async {
     try {
+      setState(() => isLoading = true);
       List<dynamic> attendanceList = await _attendanceService.getAttendanceByEvent(widget.eventId);
       List<dynamic> attended = [];
       List<dynamic> notAttended = [];
@@ -48,22 +52,165 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
       setState(() {
         _attendedMembers = attended;
         _notAttendedMembers = notAttended;
+        isLoading = false;
       });
     } catch (e) {
-      print('Failed to fetch attendance details: $e');
+      setState(() => isLoading = false);
+      _showError('Failed to fetch attendance details: $e');
     }
   }
 
-  Widget _buildTable(List<dynamic> data, List<String> columns) {
-    return DataTable(
-      columns: columns.map((column) => DataColumn(label: Text(column))).toList(),
-      rows: data.map((row) {
-        return DataRow(
-          cells: columns.map((column) {
-            return DataCell(Text(row[column.toLowerCase()] ?? ''));
-          }).toList(),
-        );
-      }).toList(),
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Widget _buildMemberCard(Map<String, dynamic> member, bool isAttended) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: isAttended ? Colors.green.shade100 : Colors.red.shade100,
+                  child: Text(
+                    member['name'][0].toUpperCase(),
+                    style: TextStyle(
+                      color: isAttended ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    member['name'],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isAttended ? Colors.green.shade50 : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    isAttended ? 'Present' : 'Absent',
+                    style: TextStyle(
+                      color: isAttended ? Colors.green : Colors.red,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (isAttended) ...[
+              const SizedBox(height: 8),
+              if (member['topic'] != null && member['topic'].isNotEmpty)
+                _buildInfoRow('Topic', member['topic']),
+              if (member['aob'] != null && member['aob'].isNotEmpty)
+                _buildInfoRow('AOB', member['aob']),
+            ] else ...[
+              const SizedBox(height: 8),
+              if (member['apology'] != null && member['apology'].isNotEmpty)
+                _buildInfoRow('Apology', member['apology']),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count.toString(),
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -72,20 +219,81 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Attendance Details"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Attended Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              _buildTable(_attendedMembers, ['Name', 'Topic', 'AOB']),
-              const SizedBox(height: 20),
-              const Text("Not Attended Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              _buildTable(_notAttendedMembers, ['Name', 'Apology']),
-            ],
+        elevation: 0,
+        backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchAttendanceDetails,
           ),
+        ],
+      ),
+      body: isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading attendance details...',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchAttendanceDetails,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(
+                      'Present Members',
+                      _attendedMembers.length,
+                    ),
+                    if (_attendedMembers.isEmpty)
+                      _buildEmptyState('No members attended this event'),
+                    ..._attendedMembers.map(
+                      (member) => _buildMemberCard(member, true),
+                    ),
+                    _buildSectionHeader(
+                      'Absent Members',
+                      _notAttendedMembers.length,
+                    ),
+                    if (_notAttendedMembers.isEmpty)
+                      _buildEmptyState('No members were absent'),
+                    ..._notAttendedMembers.map(
+                      (member) => _buildMemberCard(member, false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

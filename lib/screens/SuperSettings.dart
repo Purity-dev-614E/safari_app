@@ -15,6 +15,7 @@ class _SuperSettingsState extends State<SuperSettings> {
   List<dynamic> groups = [];
   bool allowProfileEdits = true;
   String? superAdminUserId;
+  bool isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
   final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
@@ -39,63 +40,63 @@ class _SuperSettingsState extends State<SuperSettings> {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
       return userDetails['role'] == 'super_admin';
     } catch (e) {
-      print('Failed to fetch user details: $e');
+      _showError('Failed to fetch user details: $e');
       return false;
     }
   }
 
   Future<void> _fetchGroups() async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to view this page')),
-      );
+      _showError('You do not have permission to view this page');
       return;
     }
 
     try {
+      setState(() {
+        isLoading = true;
+      });
       List<dynamic> groupData = await _groupService.getAllGroups();
       setState(() {
         groups = groupData ?? [];
+        isLoading = false;
       });
     } catch (e) {
-      print('Failed to fetch groups: $e');
+      setState(() {
+        isLoading = false;
+      });
+      _showError('Failed to fetch groups: $e');
     }
   }
 
   Future<void> _createGroup(String groupName) async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to create groups')),
-      );
+      _showError('You do not have permission to create groups');
       return;
     }
 
     try {
       await _groupService.createGroup({'name': groupName});
-      _fetchGroups();
+      await _fetchGroups();
       Navigator.pop(context);
+      _showSuccess('Group created successfully');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create group')),
-      );
+      _showError('Failed to create group: $e');
     }
   }
 
   Future<void> _deleteGroup(String groupId) async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to delete groups')),
-      );
+      _showError('You do not have permission to delete groups');
       return;
     }
 
     try {
       await _groupService.deleteGroup(groupId);
-      _fetchGroups();
+      await _fetchGroups();
+      Navigator.pop(context);
+      _showSuccess('Group deleted successfully');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete group')),
-      );
+      _showError('Failed to delete group: $e');
     }
   }
 
@@ -110,6 +111,7 @@ class _SuperSettingsState extends State<SuperSettings> {
             controller: controller,
             decoration: const InputDecoration(
               hintText: "Enter Group Name",
+              border: OutlineInputBorder(),
             ),
           ),
           actions: [
@@ -117,10 +119,12 @@ class _SuperSettingsState extends State<SuperSettings> {
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 if (controller.text.isNotEmpty) {
                   _createGroup(controller.text);
+                } else {
+                  _showError('Group name cannot be empty');
                 }
               },
               child: const Text("Create"),
@@ -136,21 +140,22 @@ class _SuperSettingsState extends State<SuperSettings> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text("Delete $groupName"),
-        content: const Text("Are you sure you want to delete this group?"),
+        content: const Text("Are you sure you want to delete this group? This action cannot be undone."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               _deleteGroup(groupId);
               Navigator.pop(context);
             },
-            child: Text(
-              "Delete Group",
-              style: TextStyle(color: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
+            child: const Text("Delete Group"),
           ),
         ],
       ),
@@ -159,19 +164,23 @@ class _SuperSettingsState extends State<SuperSettings> {
 
   Future<void> _toggleProfileEdits(bool value) async {
     if (!await _isSuperAdmin()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You do not have permission to change this setting')),
-      );
+      _showError('You do not have permission to change this setting');
       return;
     }
 
-    setState(() {
-      allowProfileEdits = value;
-    });
+    try {
+      // TODO: Implement API call to update profile edit settings
+      setState(() {
+        allowProfileEdits = value;
+      });
+      _showSuccess('Profile edit settings updated');
+    } catch (e) {
+      _showError('Failed to update profile edit settings: $e');
+    }
   }
 
   Future<void> _showAssignAdminDialog(String groupId, String currentAdminName) async {
-    final TextEditingController nameController = TextEditingController();
+    final TextEditingController fullnameController = TextEditingController();
 
     return showDialog(
       context: context,
@@ -191,10 +200,11 @@ class _SuperSettingsState extends State<SuperSettings> {
                   ),
                 ),
               TextField(
-                controller: nameController,
+                controller: fullnameController,
                 decoration: const InputDecoration(
-                  hintText: "Enter new admin's name",
-                  labelText: "Admin's Name",
+                  hintText: "Enter admin's email",
+                  labelText: "Admin's Email",
+                  border: OutlineInputBorder(),
                 ),
               ),
             ],
@@ -204,25 +214,25 @@ class _SuperSettingsState extends State<SuperSettings> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 try {
-                  final users = await _userService.searchUsersByName(nameController.text);
+                  final users = await _userService.searchUsersByName(fullnameController.text);
                   if (users.isEmpty) {
-                    throw Exception('No user found with that name');
+                    throw Exception('No user found with that email');
                   }
                   
-                  await _userService.assignAdminToGroup(groupId, users[0]['id']);
+                  final user = users[0];
+                  if (user['role'] != 'admin') {
+                    throw Exception('Selected user is not an admin');
+                  }
+                  
+                  await _userService.assignAdminToGroup(groupId, user['id']);
                   Navigator.pop(context);
-                  _fetchGroups(); // Refresh the list
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Admin assigned successfully')),
-                  );
+                  await _fetchGroups();
+                  _showSuccess('Admin assigned successfully');
                 } catch (e) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to assign admin: $e')),
-                  );
+                  _showError('Failed to assign admin: $e');
                 }
               },
               child: const Text('Assign'),
@@ -233,83 +243,108 @@ class _SuperSettingsState extends State<SuperSettings> {
     );
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Settings"),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(12.0),
-        children: [
-          // Group management section
-          ListTile(
-            title: TextButton(
-              onPressed: () {
-                _fetchGroups();
-              },
-              child: const Text(
-                "Group Management",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            trailing: IconButton(
-              onPressed: _showCreateGroupDialog,
-              icon: const Icon(Icons.add),
-            ),
-          ),
-          const SizedBox(height: 8.0),
-          // List of groups with delete action and admin assignment
-          ...groups.map((group) {
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-              child: ListTile(
-                title: Text(group['name'] ?? ''),
-                subtitle: Text('Admin: ${group['admin_name'] ?? 'None'}'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AdminEventList(groupId: group['id'] ?? ''),
-                    ),
-                  );
-                },
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.admin_panel_settings),
-                      onPressed: () => _showAssignAdminDialog(
-                        group['id'] ?? '',
-                        group['admin_name'] ?? 'None',
-                      ),
-                      tooltip: 'Assign Admin',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteGroupDialog(
-                        group['id'] ?? '',
-                        group['name'] ?? '',
-                      ),
-                      tooltip: 'Delete Group',
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const Divider(height: 32),
-          // App permissions section
-          SwitchListTile(
-            title: const Text(
-              "Profile Edits",
-              style: TextStyle(fontSize: 16.0),
-            ),
-            value: allowProfileEdits,
-            onChanged: _toggleProfileEdits,
+        title: const Text("Super Admin Settings"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchGroups,
           ),
         ],
       ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Group Management Section
+                  Text(
+                    'Group Management',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _showCreateGroupDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create New Group'),
+                  ),
+                  const SizedBox(height: 16),
+                  ...groups.map((group) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(group['name'] ?? ''),
+                      subtitle: Text('Admin: ${group['admin_name'] ?? 'None'}'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AdminEventList(groupId: group['id'] ?? ''),
+                          ),
+                        );
+                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.admin_panel_settings),
+                            onPressed: () => _showAssignAdminDialog(
+                              group['id'] ?? '',
+                              group['admin_name'] ?? 'None',
+                            ),
+                            tooltip: 'Assign Admin',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _showDeleteGroupDialog(
+                              group['id'] ?? '',
+                              group['name'] ?? '',
+                            ),
+                            tooltip: 'Delete Group',
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+                  const SizedBox(height: 24),
+                  
+                  // System Settings Section
+                  Text(
+                    'System Settings',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Allow Profile Edits'),
+                    subtitle: const Text('Enable or disable user profile editing'),
+                    value: allowProfileEdits,
+                    onChanged: _toggleProfileEdits,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
