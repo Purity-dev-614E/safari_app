@@ -9,8 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
 
-// Ensure this import is correct
-
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -24,6 +22,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int numberOfUpcomingEvents = 0;
   String? adminUserId;
   String? groupId;
+  bool isLoading = true;
 
   final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
   final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
@@ -69,19 +68,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Enter Group Name'),
+          title: const Text('Enter Group Name'),
           content: TextField(
             onChanged: (value) {
               groupName = value;
             },
-            decoration: InputDecoration(hintText: "Group Name"),
+            decoration: InputDecoration(
+              hintText: "Group Name",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+            ),
           ),
           actions: <Widget>[
-            ElevatedButton(
-              child: Text('OK'),
+            TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
             ),
           ],
         );
@@ -93,27 +105,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<String> _fetchGroupIdByName(String groupName) async {
     try {
       final group = await _groupService.getGroupByName(groupName);
-      
+
       // Check if the current user is an admin of this group
       if (adminUserId == null) {
         throw Exception('Admin user ID not found');
       }
-      
+
       // Check if the current user is in the admins list
-      List<dynamic> admins = group['admins'] ?? [];
-      bool isAdmin = admins.any((admin) => admin['id'] == adminUserId);
-      
+      String admin = group['group_admin_id'] ?? "";
+      bool isAdmin = admin == adminUserId;
+
       if (!isAdmin) {
         throw Exception('You are not an admin of this group');
       }
-      
+
       return group['id'];
     } catch (e) {
-      // Show error notification
       NotificationOverlay.of(context).showNotification(
-        message: e.toString().contains('not an admin') 
-          ? 'You are not an admin of this group. Please enter a group where you are an admin.'
-          : 'Failed to fetch group: ${e.toString()}',
+        message: e.toString().contains('not an admin')
+            ? 'You are not an admin of this group. Please enter a group where you are an admin.'
+            : 'Failed to fetch group: ${e.toString()}',
         type: NotificationType.error,
       );
       throw e;
@@ -132,12 +143,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
         groupName = groupDetails['name'];
         numberOfMembers = members.length;
         numberOfUpcomingEvents = events.length;
+        isLoading = false;
       });
     } catch (e) {
       NotificationOverlay.of(context).showNotification(
         message: 'Failed to fetch dashboard data: $e',
         type: NotificationType.error,
       );
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -145,20 +160,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dashboard"),
+        title: const Text("Dashboard"),
         actions: [
           IconButton(
-            icon: Icon(Icons.account_circle),
+            icon: const Icon(Icons.account_circle),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => UserProfileScreen()),
+                MaterialPageRoute(builder: (context) => const UserProfileScreen()),
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchDashboardData,
+          ),
         ],
       ),
-      body: Padding(
+      body: isLoading
+          ? const Center(
+        child: CircularProgressIndicator(),
+      )
+          : Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,14 +198,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _buildSummaryCard("Upcoming Events", numberOfUpcomingEvents.toString(), Icons.event),
               ],
             ),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to add members screen (form)
                 Navigator.pushReplacementNamed(context, '/createEvent');
-                _addMember('newMemberId'); // Replace 'newMemberId' with actual member ID
               },
-              icon: Icon(Icons.event),
+              icon: const Icon(Icons.event),
               label: const Text("Add Events"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -208,7 +236,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
         onTap: (index) {
-          // Handle Navigation
           if (index == 0) {
             Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
           } else if (index == 1) {
@@ -241,21 +268,5 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
       ),
     );
-  }
-
-  Future<void> _addMember(String memberId) async {
-    try {
-      await _groupService.addGroupMember(groupId!, memberId);
-      _fetchDashboardData();
-      NotificationOverlay.of(context).showNotification(
-        message: 'Member added successfully',
-        type: NotificationType.success,
-      );
-    } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to add member: $e',
-        type: NotificationType.error,
-      );
-    }
   }
 }

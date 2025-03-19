@@ -238,17 +238,17 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
             ),
             items: groups != null && groups!.isNotEmpty
                 ? groups!.map<DropdownMenuItem<String>>((group) {
-                    return DropdownMenuItem<String>(
-                      value: group['id'],
-                      child: Text(group['name']),
-                    );
-                  }).toList()
+              return DropdownMenuItem<String>(
+                value: group['id'],
+                child: Text(group['name']),
+              );
+            }).toList()
                 : [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('No groups available'),
-                    ),
-                  ],
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('No groups available'),
+              ),
+            ],
             onChanged: (value) {
               if (value != null) {
                 setState(() {
@@ -309,98 +309,98 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
             ),
             child: attendanceData != null && attendanceData!['attendance_trends'] != null
                 ? LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 1,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.blue.shade100,
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            interval: 1,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                value.toInt().toString(),
-                                style: TextStyle(
-                                  color: Colors.blue.shade700,
-                                  fontSize: 12,
-                                ),
-                              );
-                            },
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.blue.shade100,
+                      strokeWidth: 1,
+                    );
+                  },
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
                           ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 1,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                value.toInt().toString(),
-                                style: TextStyle(
-                                  color: Colors.blue.shade700,
-                                  fontSize: 12,
-                                ),
-                              );
-                            },
-                            reservedSize: 42,
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: (attendanceData!['attendance_trends'] as List<dynamic>)
-                              .map((data) => FlSpot(
-                                    (data['time'] as num).toDouble(),
-                                    (data['count'] as num).toDouble(),
-                                  ))
-                              .toList(),
-                          isCurved: true,
-                          color: Colors.blue.shade700,
-                          barWidth: 3,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, barData, index) {
-                              return FlDotCirclePainter(
-                                radius: 6,
-                                color: Colors.white,
-                                strokeWidth: 2,
-                                strokeColor: Colors.blue.shade700,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Center(
-                    child: Text(
-                      'No attendance data available',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 16,
-                      ),
+                        );
+                      },
                     ),
                   ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                      reservedSize: 42,
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: (attendanceData!['attendance_trends'] as List<dynamic>)
+                        .map((data) => FlSpot(
+                      (data['time'] as num).toDouble(),
+                      (data['count'] as num).toDouble(),
+                    ))
+                        .toList(),
+                    isCurved: true,
+                    color: Colors.blue.shade700,
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 6,
+                          color: Colors.white,
+                          strokeWidth: 2,
+                          strokeColor: Colors.blue.shade700,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            )
+                : Center(
+              child: Text(
+                'No attendance data available',
+                style: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -453,31 +453,31 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
             ),
             child: groupDemographics != null && groupDemographics!.isNotEmpty
                 ? PieChart(
-                    PieChartData(
-                      sections: groupDemographics!.map<PieChartSectionData>((data) {
-                        return PieChartSectionData(
-                          value: (data['count'] as num).toDouble(),
-                          color: Colors.primaries[groupDemographics!.indexOf(data) % Colors.primaries.length],
-                          title: data['group_name'],
-                          radius: 100,
-                          titleStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        );
-                      }).toList(),
+              PieChartData(
+                sections: groupDemographics!.map<PieChartSectionData>((data) {
+                  return PieChartSectionData(
+                    value: (data['count'] as num).toDouble(),
+                    color: Colors.primaries[groupDemographics!.indexOf(data) % Colors.primaries.length],
+                    title: data['group_name'],
+                    radius: 100,
+                    titleStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                  )
+                  );
+                }).toList(),
+              ),
+            )
                 : Center(
-                    child: Text(
-                      'No demographics data available',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+              child: Text(
+                'No demographics data available',
+                style: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -502,57 +502,57 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
             onPressed: _isRefreshing ? null : _fetchAnalytics,
             icon: _isRefreshing
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            )
                 : Icon(
-                    Icons.refresh,
-                    color: Colors.blue.shade700,
-                  ),
+              Icons.refresh,
+              color: Colors.blue.shade700,
+            ),
           ),
         ],
       ),
       body: _isLoading
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading analytics...',
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _fetchAnalytics,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTimePeriodSelector(),
-                      const SizedBox(height: 16),
-                      _buildGroupSelector(),
-                      const SizedBox(height: 16),
-                      _buildAttendanceChart(),
-                      const SizedBox(height: 16),
-                      _buildDemographicsChart(),
-                    ],
-                  ),
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Loading analytics...',
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontSize: 16,
               ),
             ),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _fetchAnalytics,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTimePeriodSelector(),
+                const SizedBox(height: 16),
+                _buildGroupSelector(),
+                const SizedBox(height: 16),
+                _buildAttendanceChart(),
+                const SizedBox(height: 16),
+                _buildDemographicsChart(),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

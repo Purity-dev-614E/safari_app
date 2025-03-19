@@ -385,7 +385,7 @@ class _SuperSettingsState extends State<SuperSettings> {
                     throw Exception('Selected user is not an admin');
                   }
                   
-                  await _userService.assignAdminToGroup(groupId, user['id']);
+                  await _groupService.assignAdminToGroup(groupId, user['id']);
                   Navigator.pop(context);
                   await _fetchGroups();
                   NotificationOverlay.of(context).showNotification(

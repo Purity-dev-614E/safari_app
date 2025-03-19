@@ -176,7 +176,7 @@ class UserService {
   Future<void> updateUserRole(String userId, String newRole) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.put(
-      Uri.parse('$baseUrl/$userId/role'),
+      Uri.parse('$baseUrl/$userId'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
