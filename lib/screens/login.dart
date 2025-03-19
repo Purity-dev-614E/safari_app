@@ -59,23 +59,23 @@ class _LoginState extends State<Login> {
       });
 
       await extractAndStoreUserData(response);
-
+      
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? role = prefs.getString('user_role') ?? 'guest'; // Default to 'guest'
       print('User  role retrieved: $role');
 
-      switch (role) {
-        case 'user':
-          Navigator.pushReplacementNamed(context, "/userDashboard");
-          break;
-        case 'admin':
-          Navigator.pushReplacementNamed(context, "/adminDashboard");
-          break;
+        switch (role) {
+          case 'user':
+            Navigator.pushReplacementNamed(context, "/userDashboard");
+            break;
+          case 'admin':
+            Navigator.pushReplacementNamed(context, "/adminDashboard");
+            break;
         case 'super admin':
-          Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
-          break;
-        default:
-          Navigator.pushReplacementNamed(context, "/updateProfile");
+            Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
+            break;
+          default:
+        Navigator.pushReplacementNamed(context, "/updateProfile");
       }
 
     } catch (e) {
@@ -98,7 +98,7 @@ class _LoginState extends State<Login> {
 
     final userData = await userService.getUserById(userId);
     final userRole = userData['role'] ?? ''; // Default to 'guest'
-
+    
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_id', userId);
     await prefs.setString('user_role', userRole);
@@ -127,10 +127,10 @@ class _LoginState extends State<Login> {
       });
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -141,21 +141,21 @@ class _LoginState extends State<Login> {
                   Text('Password Reset Email Sent'),
                 ],
               ),
-              content: const Text(
-                'Please check your email for instructions to reset your password. '
-                'If you don\'t see the email, please check your spam folder.'
+            content: const Text(
+              'Please check your email for instructions to reset your password. '
+              'If you don\'t see the email, please check your spam folder.'
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
               ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
+            ],
+          );
+        },
+      );
       }
     } catch (e) {
       setState(() {
@@ -183,12 +183,12 @@ class _LoginState extends State<Login> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                   const SizedBox(height: 40),
                   Center(
                     child: Container(
@@ -213,22 +213,22 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  Center(
-                    child: Text(
-                      'Welcome to Church',
-                      style: TextStyle(
+              Center(
+                child: Text(
+                  'Welcome to Church',
+                  style: TextStyle(
                         fontSize: 32.0,
-                        fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                         color: Colors.blue.shade700,
                         letterSpacing: 1.5,
-                      ),
-                    ),
                   ),
+                ),
+              ),
                   const SizedBox(height: 8),
                   Center(
                     child: Text(
                       'Sign in to continue',
-                      style: TextStyle(
+                style: TextStyle(
                         fontSize: 16.0,
                         color: Colors.blue.shade700,
                         letterSpacing: 0.5,
@@ -253,8 +253,8 @@ class _LoginState extends State<Login> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextField(
-                          controller: emailController,
+              TextField(
+                controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             labelText: 'Email Address',
@@ -276,11 +276,11 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        TextField(
-                          controller: passwordController,
+              TextField(
+                controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
-                            labelText: 'Password',
+                  labelText: 'Password',
                             prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -310,19 +310,19 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _resetPassword,
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _resetPassword,
                             child: Text(
-                              'Forgot Password?',
-                              style: TextStyle(
+                    'Forgot Password?',
+                    style: TextStyle(
                                 color: Colors.blue.shade700,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: isLoading ? null : _login,
@@ -338,14 +338,14 @@ class _LoginState extends State<Login> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(
+                child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
                               : const Text(
                                   'Sign In',
-                                  style: TextStyle(
+                    style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -360,12 +360,12 @@ class _LoginState extends State<Login> {
                               'Don\'t have an account? ',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(context, "/register");
-                              },
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, "/register");
+                },
                               child: Text(
                                 'Sign Up',
                                 style: TextStyle(
