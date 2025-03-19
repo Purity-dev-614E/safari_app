@@ -10,84 +10,102 @@ import 'package:church_app/screens/adminEventList.dart';
 import 'package:church_app/screens/register.dart';
 import 'package:church_app/screens/super_admin_dashoard.dart';
 import 'package:church_app/screens/userDashboard.dart';
-import 'package:church_app/services/userServices.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/screens/login.dart';
-import 'package:church_app/screens/userDashboard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-      url: "https://hubrwunvnuslutyykvli.supabase.co",
-      anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1YnJ3dW52bnVzbHV0eXlrdmxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NjE4MzEsImV4cCI6MjA1NzMzNzgzMX0.GEUOfe5OKzBZY5zT-LlhagykiCMMznxCY5pqTwpLhas"
-  );
-
-  runApp(MyApp());
+  await _initializeSupabase();
+  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+Future<void> _initializeSupabase() async {
+  await Supabase.initialize(
+    url: "https://hubrwunvnuslutyykvli.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1YnJ3dW52bnVzbHV0eXlrdmxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NjE4MzEsImV4cCI6MjA1NzMzNzgzMX0.GEUOfe5OKzBZY5zT-LlhagykiCMMznxCY5pqTwpLhas", // Use environment variables for security
+  );
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  Future<void> _checkLoginStatus(BuildContext context) async {
-    final UserService userService = UserService(baseUrl: 'https://safari-backend-3dj1.onrender.com/api/users');
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => _checkLoginStatus()); // Ensures context is available
+  }
+
+  Future<void> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
     String? userId = prefs.getString('user_id');
-    print('The users_id is: $userId');
+    print('Retrieved user_id: $userId');
 
     if (userId == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Login()),
-      );
-    } else {
-      final userData = await userService.getUserById(userId);
+      _navigateTo('/login');
+      return;
+    }
 
-      if (userData['role'] != null) {
-        if (userData['role'] == 'user') {
-          Navigator.pushReplacementNamed(context, "/userDashboard");
-        } else if (userData['role'] == 'admin') {
-          Navigator.pushReplacementNamed(context, "/adminDashboard");
-        } else if (userData['role'] == 'super admin') {
-          Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
-        }
-      } else {
-        Navigator.pushReplacementNamed(context, "/updateProfile");
-      }
+
+    String? role = prefs.getString('user_role');
+    print('User Role: $role');
+    if (role == null) {
+      _navigateTo('/login');
+    } else {
+      _setInitialRouteBasedOnRole(role);
     }
   }
 
+  void _navigateTo(String route) {
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, route);
+    }
+  }
+
+  void _setInitialRouteBasedOnRole(String role) {
+    String route = switch (role) {
+      'user' => '/userDashboard',
+      'admin' => '/adminDashboard',
+      'super_admin' => '/super_admin_dashboard',
+      _ => '/updateProfile'
+    };
+    _navigateTo(route);
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
-    return NotificationOverlay(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Builder(
-          builder: (context) {
-            _checkLoginStatus(context);
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          },
-        ),
-        routes: {
-          '/login': (context) => const Login(),
-          '/register': (context) => const Signup(),
-          '/super_admin_dashboard': (context) => const SuperAdminDashboard(),
-          '/UserManagement': (context) => const UserManagement(),
-          '/SuperAnalytics': (context) => const SuperAnalytics(),
-          '/SuperSettings': (context) => const SuperSettings(),
-          '/userDashboard': (context) => const UserDashboard(),
-          '/Profile': (context) => const UserProfileScreen(),
-          '/updateProfile': (context) => const UserProfileScreen(),
-          '/adminDashboard': (context) => const AdminDashboard(),
-          '/GroupMembers': (context) => const GroupMembers(),
-          '/GroupAnalytics': (context) => const GroupAnalytics(),
-          '/createEvent': (context) => const AddEventsScreen(),
-        },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: NotificationOverlay(child: child!),
       ),
+      initialRoute: '/login',
+      routes: {
+        '/login': (context) => const Login(),
+        '/register': (context) => const Signup(),
+        '/super_admin_dashboard': (context) => const SuperAdminDashboard(),
+        '/UserManagement': (context) => const UserManagement(),
+        '/SuperAnalytics': (context) => const SuperAnalytics(),
+        '/SuperSettings': (context) => const SuperSettings(),
+        '/userDashboard': (context) => const UserDashboard(),
+        '/Profile': (context) => const UserProfileScreen(),
+        '/updateProfile': (context) => const UpdateProfileScreen(),
+        '/adminDashboard': (context) => const AdminDashboard(),
+        '/GroupMembers': (context) => const GroupMembers(),
+        '/GroupAnalytics': (context) => const GroupAnalytics(),
+        '/createEvent': (context) => const AddEventsScreen(),
+      },
     );
   }
 }

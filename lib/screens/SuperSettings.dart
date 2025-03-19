@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_constants.dart';
 import 'adminEventList.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
@@ -20,8 +21,8 @@ class _SuperSettingsState extends State<SuperSettings> {
   bool isLoading = true;
   bool isRefreshing = false;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
 
   @override
   void initState() {
@@ -41,7 +42,7 @@ class _SuperSettingsState extends State<SuperSettings> {
     if (superAdminUserId == null) return false;
     try {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
-      return userDetails['role'] == 'super_admin';
+      return userDetails['role'] == 'super admin';
     } catch (e) {
       NotificationOverlay.of(context).showNotification(
         message: 'Failed to fetch user details: $e',

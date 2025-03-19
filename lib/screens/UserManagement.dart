@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:church_app/services/groupServices.dart';
+import '../constants/api_constants.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
 
 class User {
   final String id;
-  final String name;
+  final String full_name;
   final String email;
   final String role;
   final String group;
 
   User({
     required this.id,
-    required this.name,
+    required this.full_name,
     required this.email,
     required this.role,
     required this.group,
@@ -33,8 +34,8 @@ class _UserManagementState extends State<UserManagement> {
   String searchQuery = '';
   bool _isLoading = true;
 
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _UserManagementState extends State<UserManagement> {
       setState(() {
         users = userData.map((data) => User(
           id: data['id'] ?? '',
-          name: data['full_name'] ?? '',
+          full_name: data['full_name'] ?? '',
           email: data['email'] ?? '',
           role: data['role'] ?? '',
           group: data['group'] ?? '',
@@ -74,7 +75,7 @@ class _UserManagementState extends State<UserManagement> {
     if (searchQuery.isEmpty) return users;
     return users.where((user) {
       final lowerCaseQuery = searchQuery.toLowerCase();
-      return user.name.toLowerCase().contains(lowerCaseQuery) ||
+      return user.full_name.toLowerCase().contains(lowerCaseQuery) ||
           user.email.toLowerCase().contains(lowerCaseQuery);
     }).toList();
   }
@@ -90,7 +91,7 @@ class _UserManagementState extends State<UserManagement> {
             const Text('Confirm Delete'),
           ],
         ),
-        content: Text('Are you sure you want to delete ${user.name}?'),
+        content: Text('Are you sure you want to delete ${user.full_name}?'),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
@@ -119,14 +120,14 @@ class _UserManagementState extends State<UserManagement> {
         });
         if (mounted) {
           NotificationOverlay.of(context).showNotification(
-            message: 'User ${user.name} deleted successfully',
+            message: 'User ${user.full_name} deleted successfully',
             type: NotificationType.success,
           );
         }
       } catch (e) {
         if (mounted) {
           NotificationOverlay.of(context).showNotification(
-            message: 'Failed to delete user ${user.name}',
+            message: 'Failed to delete user ${user.full_name}',
             type: NotificationType.error,
           );
         }
@@ -141,7 +142,7 @@ class _UserManagementState extends State<UserManagement> {
         int index = users.indexOf(user);
         users[index] = User(
           id: user.id,
-          name: user.name,
+          full_name: user.full_name,
           email: user.email,
           role: user.role,
           group: newGroup,
@@ -149,14 +150,14 @@ class _UserManagementState extends State<UserManagement> {
       });
       if (mounted) {
         NotificationOverlay.of(context).showNotification(
-          message: '${user.name} assigned to $newGroup',
+          message: '${user.full_name} assigned to $newGroup',
           type: NotificationType.success,
         );
       }
     } catch (e) {
       if (mounted) {
         NotificationOverlay.of(context).showNotification(
-          message: 'Failed to assign ${user.name} to $newGroup',
+          message: 'Failed to assign ${user.full_name} to $newGroup',
           type: NotificationType.error,
         );
       }
@@ -170,7 +171,7 @@ class _UserManagementState extends State<UserManagement> {
         int index = users.indexOf(user);
         users[index] = User(
           id: user.id,
-          name: user.name,
+          full_name: user.full_name,
           email: user.email,
           role: newRole,
           group: user.group,
@@ -178,14 +179,14 @@ class _UserManagementState extends State<UserManagement> {
       });
       if (mounted) {
         NotificationOverlay.of(context).showNotification(
-          message: '${user.name}\'s role updated to $newRole',
+          message: '${user.full_name}\'s role updated to $newRole',
           type: NotificationType.success,
         );
       }
     } catch (e) {
       if (mounted) {
         NotificationOverlay.of(context).showNotification(
-          message: 'Failed to update role for ${user.name}',
+          message: 'Failed to update role for ${user.full_name}',
           type: NotificationType.error,
         );
       }
@@ -311,7 +312,7 @@ class _UserManagementState extends State<UserManagement> {
                                         shape: BoxShape.circle,
                                       ),
                                       child: Text(
-                                        user.name[0].toUpperCase(),
+                                        user.full_name[0].toUpperCase(),
                                         style: TextStyle(
                                           color: Colors.blue.shade700,
                                           fontWeight: FontWeight.bold,
@@ -325,7 +326,7 @@ class _UserManagementState extends State<UserManagement> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            user.name,
+                                            user.full_name,
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
@@ -342,6 +343,7 @@ class _UserManagementState extends State<UserManagement> {
                                         ],
                                       ),
                                     ),
+
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 12,
@@ -376,7 +378,7 @@ class _UserManagementState extends State<UserManagement> {
                                           border: Border.all(color: Colors.blue.shade200),
                                         ),
                                         child: DropdownButtonFormField<String>(
-                                          value: user.role,
+                                          value: user.role.isNotEmpty ? user.role : null, // Ensure a valid value
                                           decoration: InputDecoration(
                                             labelText: 'Role',
                                             labelStyle: TextStyle(color: Colors.blue.shade700),
@@ -385,12 +387,12 @@ class _UserManagementState extends State<UserManagement> {
                                           ),
                                           items: ['super admin', 'admin', 'user']
                                               .map((role) => DropdownMenuItem(
-                                                    value: role,
-                                                    child: Text(
-                                                      role,
-                                                      style: TextStyle(color: Colors.blue.shade700),
-                                                    ),
-                                                  ))
+                                            value: role,
+                                            child: Text(
+                                              role,
+                                              style: TextStyle(color: Colors.blue.shade700),
+                                            ),
+                                          ))
                                               .toList(),
                                           onChanged: (newRole) {
                                             if (newRole != null) {
@@ -400,7 +402,7 @@ class _UserManagementState extends State<UserManagement> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+
                                     // Group Assignment Dropdown
                                     Expanded(
                                       child: Container(
@@ -411,7 +413,7 @@ class _UserManagementState extends State<UserManagement> {
                                           border: Border.all(color: Colors.blue.shade200),
                                         ),
                                         child: DropdownButtonFormField<String>(
-                                          value: user.group,
+                                          value: user.group.isNotEmpty ? user.group : null, // Ensure a valid value
                                           decoration: InputDecoration(
                                             labelText: 'Group',
                                             labelStyle: TextStyle(color: Colors.blue.shade700),
@@ -420,9 +422,9 @@ class _UserManagementState extends State<UserManagement> {
                                           ),
                                           items: groups.map<DropdownMenuItem<String>>((group) {
                                             return DropdownMenuItem<String>(
-                                              value: group['id'],
+                                              value: group['id'], // Ensure this is the correct ID
                                               child: Text(
-                                                group['name'],
+                                                group['name'] ?? 'Unknown Group', // Handle missing name
                                                 style: TextStyle(color: Colors.blue.shade700),
                                               ),
                                             );

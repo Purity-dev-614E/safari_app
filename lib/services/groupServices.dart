@@ -60,6 +60,8 @@ class GroupService {
     }
   }
 
+
+
   Future<Map<String, dynamic>> updateGroup(String id, Map<String, dynamic> groupData) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.put(
@@ -165,13 +167,18 @@ class GroupService {
 
   Future<Map<String, dynamic>> assignAdminToGroup(String groupId, String userId) async {
     final token = await _secureStorage.read(key: 'auth_token');
+    final String url = '$baseUrl/groups/assign-admin';
+    print('POST REQUEST: $url');
     final response = await http.post(
-      Uri.parse('$baseUrl/groups/assign-admin'),
+      Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'groupId': groupId, 'userId': userId}),
+      body: jsonEncode({
+        'groupId': groupId,
+        'userId': userId
+      }),
     );
 
     if (response.statusCode == 200) {

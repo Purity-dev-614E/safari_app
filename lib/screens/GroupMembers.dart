@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
 
+import '../constants/api_constants.dart';
+
 class GroupMembers extends StatefulWidget {
   const GroupMembers({super.key});
 
@@ -18,7 +20,7 @@ class _GroupMembersState extends State<GroupMembers> {
   bool isLoading = true;
   bool _isRefreshing = false;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {
@@ -346,7 +348,7 @@ class AddMemberScreen extends StatefulWidget {
 
 class _AddMemberScreenState extends State<AddMemberScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
   bool _isLoading = false;
 
   Future<void> _addMember() async {
@@ -457,7 +459,7 @@ class _EditMemberScreenState extends State<EditMemberScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _roleController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
   bool _isLoading = false;
 
   @override

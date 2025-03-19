@@ -3,6 +3,7 @@ import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/userServices.dart';
 import 'package:church_app/services/analyticsService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_constants.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
 
@@ -21,9 +22,9 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   bool _isLoading = true;
   bool _isRefreshing = false;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
-  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
+  final AnalyticsService _analyticsService = AnalyticsService(baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     if (superAdminUserId == null) return false;
     try {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
-      return userDetails['role'] == 'super_admin';
+      return userDetails['role'] == 'super admin';
     } catch (e) {
       NotificationOverlay.of(context).showNotification(
         message: 'Failed to fetch user details: $e',

@@ -14,7 +14,7 @@ class UserService {
     final token = await _secureStorage.read(key: 'auth_token');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final id = prefs.getString('user_id');
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$id/upload'));
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$id/uploadimage'));
     request.headers['Authorization'] = 'Bearer $token';
     request.files.add(await http.MultipartFile.fromPath('file', image.path));
 

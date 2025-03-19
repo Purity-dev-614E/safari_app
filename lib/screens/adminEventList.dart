@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_constants.dart';
 import 'attendanceDetails.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
@@ -15,7 +16,7 @@ class AdminEventList extends StatefulWidget {
 }
 
 class _AdminEventListState extends State<AdminEventList> {
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
   List<dynamic> _events = [];
   bool _isLoading = true;
 
@@ -131,7 +132,7 @@ class AddEventsScreen extends StatefulWidget {
 }
 
 class _AddEventsScreenState extends State<AddEventsScreen> {
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();

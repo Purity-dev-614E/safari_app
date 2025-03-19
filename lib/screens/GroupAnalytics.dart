@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
 
+import '../constants/api_constants.dart';
+
 class GroupAnalytics extends StatefulWidget {
   const GroupAnalytics({super.key});
 
@@ -28,10 +30,10 @@ class _GroupAnalyticsState extends State<GroupAnalytics> {
   double averageAttendance = 0;
   bool _isRefreshing = false;
 
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: ApiConstants.baseUrl);
+  final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {

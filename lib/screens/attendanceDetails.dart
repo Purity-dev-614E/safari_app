@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/attendanceService.dart';
 import 'package:church_app/services/userServices.dart';
 
+import '../constants/api_constants.dart';
 import '../widgets/custom_notification.dart';
 import '../widgets/notification_overlay.dart';
 
@@ -16,8 +17,8 @@ class AttendanceDetails extends StatefulWidget {
 }
 
 class _AttendanceDetailsState extends State<AttendanceDetails> {
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: ApiConstants.baseUrl);
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
   List<dynamic> _attendedMembers = [];
   List<dynamic> _notAttendedMembers = [];
   bool isLoading = true;

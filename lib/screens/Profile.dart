@@ -1,3 +1,4 @@
+import 'package:church_app/constants/api_constants.dart';
 import 'package:church_app/services/tokenService.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,7 +25,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String? _location = '';
   bool _isLoading = false;
 
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
 
   Future<void> _pickImage() async {
     try {

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/authServices.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
+import '../constants/api_constants.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -18,7 +19,7 @@ class _SignupState extends State<Signup> {
   bool _obscurePassword = true;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final AuthService authService = AuthService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final AuthService authService = AuthService(baseUrl: ApiConstants.baseUrl);
 
   Future<void> _signup() async {
     if (_formKey.currentState!.validate()) {

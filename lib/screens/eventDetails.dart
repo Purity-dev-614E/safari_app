@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
 
+import '../constants/api_constants.dart';
+
 class EventDetails extends StatefulWidget {
   final Map<String, dynamic> event;
 
@@ -15,8 +17,8 @@ class EventDetails extends StatefulWidget {
 }
 
 class _EventDetailsState extends State<EventDetails> {
-  final AttendanceService _attendanceService = AttendanceService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
+  final AttendanceService _attendanceService = AttendanceService(baseUrl: ApiConstants.baseUrl);
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
   String? userId;
   bool isInGroup = false;
   bool _isLoading = false;

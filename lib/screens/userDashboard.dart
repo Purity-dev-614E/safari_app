@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:church_app/services/eventService.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_constants.dart';
 import '../services/userServices.dart';
 import 'package:intl/intl.dart';
 import '../widgets/notification_overlay.dart';
@@ -25,11 +26,11 @@ class _UserDashboardState extends State<UserDashboard> {
   String? _userGroup;
 
   final UserService _userService = UserService(
-      baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+      baseUrl: ApiConstants.baseUrl);
   final EventService _eventService = EventService(
-      baseUrl: 'https://safari-backend.on.shiper.app/api');
+      baseUrl: ApiConstants.baseUrl);
   final GroupService _groupService = GroupService(
-      baseUrl: 'https://safari-backend.on.shiper.app/api');
+      baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {

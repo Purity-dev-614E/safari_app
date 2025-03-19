@@ -79,8 +79,8 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
                   TextField(
                     controller: emailController,
                     decoration: InputDecoration(
-                      hintText: "Enter admin's email",
-                      labelText: "Admin's Email",
+                      hintText: "Enter admin's Name",
+                      labelText: "Admin's Name",
                       prefixIcon: const Icon(Icons.email),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -143,7 +143,7 @@ class _GroupAdminAssignmentState extends State<GroupAdminAssignment> {
                               
                               try {
                                 setState(() => _isAssigningAdmin = true);
-                                await widget.userService.assignAdminToGroup(groupId, user['id']);
+                                await widget.groupService.assignAdminToGroup(groupId, user['id']);
                                 Navigator.of(context).pop();
                                 NotificationOverlay.of(context).showNotification(
                                   message: 'Admin assigned successfully',

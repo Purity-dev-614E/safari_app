@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_constants.dart';
 import '../services/userServices.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
@@ -22,7 +23,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   String? _phoneNumber;
   bool _isLoading = false;
 
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/users');
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
 
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
@@ -46,7 +47,10 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
         if (response.containsKey('id') && response['role'] != null) {
           await prefs.setString('full_name', _fullName!);
+          print(_fullName);
           await prefs.setString('user_role', _role!);
+          print(_role);
+          
 
           if (mounted) {
             NotificationOverlay.of(context).showNotification(
@@ -55,7 +59,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
             );
 
             // Navigate based on role
-            switch (response['role']) {
+            switch (_role) {
               case 'super admin':
                 Navigator.pushReplacementNamed(context, '/super_admin_dashboard');
                 break;

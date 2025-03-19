@@ -1,3 +1,4 @@
+import 'package:church_app/constants/api_constants.dart';
 import 'package:church_app/screens/GroupMembers.dart';
 import 'package:church_app/screens/Profile.dart';
 import 'package:flutter/material.dart';
@@ -24,9 +25,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String? adminUserId;
   String? groupId;
 
-  final GroupService _groupService = GroupService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final EventService _eventService = EventService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService _userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
+  final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
+  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
 
   @override
   void initState() {

@@ -5,6 +5,7 @@ import '../services/authServices.dart';
 import '../services/userServices.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
+import '../constants/api_constants.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -19,8 +20,8 @@ class _LoginState extends State<Login> {
   bool isLoading = false;
   bool _obscurePassword = true;
 
-  final AuthService authService = AuthService(baseUrl: 'https://safari-backend.on.shiper.app/api');
-  final UserService userService = UserService(baseUrl: 'https://safari-backend.on.shiper.app/api/users');
+  final AuthService authService = AuthService(baseUrl: ApiConstants.baseUrl);
+  final UserService userService = UserService(baseUrl: ApiConstants.usersUrl);
   final storage = const FlutterSecureStorage();
 
   Future<void> _login() async {
@@ -42,37 +43,39 @@ class _LoginState extends State<Login> {
     try {
       final response = await authService.logIn(email, password);
 
+      // Add null checks and default values
+      final accessToken = response['session']?['access_token'] ?? '';
+
+
+      if (accessToken.isEmpty) {
+        throw Exception('Access token is missing in the response');
+      }
+
+      await storage.write(key: 'auth_token', value: accessToken);
+
+
       setState(() {
         isLoading = false;
       });
 
       await extractAndStoreUserData(response);
-      
-      final String accessToken = response['session']['access_token']!;
-      final String refreshToken = response['session']['refresh_token']!;
-      
-      await storage.write(key: 'auth_token', value: accessToken);
-      await storage.write(key: 'refresh_token', value: refreshToken);
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? role = prefs.getString('user_role');
+      String? role = prefs.getString('user_role') ?? 'guest'; // Default to 'guest'
+      print('User  role retrieved: $role');
 
-      if (role != null) {
-        switch (role) {
-          case 'user':
-            Navigator.pushReplacementNamed(context, "/userDashboard");
-            break;
-          case 'admin':
-            Navigator.pushReplacementNamed(context, "/adminDashboard");
-            break;
-          case 'super_admin':
-            Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
-            break;
-          default:
-            Navigator.pushReplacementNamed(context, "/updateProfile");
-        }
-      } else {
-        Navigator.pushReplacementNamed(context, "/updateProfile");
+      switch (role) {
+        case 'user':
+          Navigator.pushReplacementNamed(context, "/userDashboard");
+          break;
+        case 'admin':
+          Navigator.pushReplacementNamed(context, "/adminDashboard");
+          break;
+        case 'super admin':
+          Navigator.pushReplacementNamed(context, "/super_admin_dashboard");
+          break;
+        default:
+          Navigator.pushReplacementNamed(context, "/updateProfile");
       }
 
     } catch (e) {
@@ -87,12 +90,18 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> extractAndStoreUserData(Map<String, dynamic> response) async {
-    final String userId = response['session']['user']['id']!;
-    final String role = response['session']['user']['role'] ?? '';
-    
+    // Add null checks and default values
+    final String userId = response['user']?['id'] ?? '';
+    if (userId.isEmpty) {
+      throw Exception('User  ID is missing in the response');
+    }
+
+    final userData = await userService.getUserById(userId);
+    final userRole = userData['role'] ?? ''; // Default to 'guest'
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_id', userId);
-    await prefs.setString('user_role', role);
+    await prefs.setString('user_role', userRole);
   }
 
   Future<void> _resetPassword() async {
