@@ -39,9 +39,9 @@ class _EventDetailsState extends State<EventDetails> {
 
   Future<void> _checkGroupMembership() async {
     if (userId == null) return;
-    
+
     try {
-      List<dynamic> members = await _groupService.getGroupMembers(widget.event['groupId']);
+      List<dynamic> members = await _groupService.getGroupMembers(widget.event['groupId'] ?? '');
       setState(() {
         isInGroup = members.any((member) => member['id'] == userId);
       });
@@ -55,23 +55,23 @@ class _EventDetailsState extends State<EventDetails> {
 
   bool _canMarkAttendance() {
     if (!isInGroup) return false;
-    
-    DateTime eventDate = DateTime.parse(widget.event['date']);
+
+    DateTime eventDate = DateTime.tryParse(widget.event['date'] ?? '') ?? DateTime.now();
     DateTime currentDate = DateTime.now();
-    
+
     // Remove time component for date comparison
     eventDate = DateTime(eventDate.year, eventDate.month, eventDate.day);
     currentDate = DateTime(currentDate.year, currentDate.month, currentDate.day);
-    
+
     return eventDate.isBefore(currentDate) || eventDate.isAtSameMomentAs(currentDate);
   }
 
   Future<void> _markAttendance(bool attended) async {
     if (!_canMarkAttendance()) {
-      String message = !isInGroup 
+      String message = !isInGroup
           ? 'You are not a member of this group'
           : 'You can only mark attendance for past or current events';
-      
+
       NotificationOverlay.of(context).showNotification(
         message: message,
         type: NotificationType.warning,
@@ -264,7 +264,7 @@ class _EventDetailsState extends State<EventDetails> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event['name'],
+                      event['title'] ?? 'No Name',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -272,7 +272,7 @@ class _EventDetailsState extends State<EventDetails> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      event['description'],
+                      event['description'] ?? 'No Description',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black87,
@@ -285,7 +285,7 @@ class _EventDetailsState extends State<EventDetails> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Date and Time: ${event['date']}",
+                            "Date and Time: ${event['date'] ?? 'No Date'}",
                             style: const TextStyle(fontSize: 16),
                           ),
                         ),
@@ -298,7 +298,7 @@ class _EventDetailsState extends State<EventDetails> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Location: ${event['location']}",
+                            "Location: ${event['location'] ?? 'No Location'}",
                             style: const TextStyle(fontSize: 16),
                           ),
                         ),

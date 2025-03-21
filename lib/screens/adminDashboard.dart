@@ -1,6 +1,8 @@
 import 'package:church_app/constants/api_constants.dart';
+import 'package:church_app/screens/AddMembers.dart';
 import 'package:church_app/screens/GroupMembers.dart';
 import 'package:church_app/screens/Profile.dart';
+import 'package:church_app/screens/eventDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/eventService.dart';
@@ -46,21 +48,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  Future<void> _fetchAdminGroups() async {
+  Future<void> _fetchEventsByGroup() async {
+    if (groupId == null || groupId!.isEmpty) return;
+
     try {
-      final groups = await _groupService.getAdminGroups(adminUserId!);
-      if (groups.length == 1) {
-        setState(() {
-          groupId = groups[0]['id'] ?? '';
-          groupName = groups[0]['name'] ?? 'Unknown Group';
-        });
-        _fetchDashboardData();
-      } else {
-        // Handle multiple groups or navigate to a selection screen
-        setState(() {
-          isLoading = false;
-        });
+      List<dynamic> events = await _eventService.getEventsByGroup(groupId!);
+      setState(() {
+        numberOfUpcomingEvents = events.length;
+      });
+    } catch (e) {
+      NotificationOverlay.of(context).showNotification(
+        message: 'Failed to fetch events: $e',
+        type: NotificationType.error,
+      );
+    }
+  }
+
+  Future<void> _fetchAdminGroups() async {
+    if (adminUserId == null || adminUserId!.isEmpty) {
+      print('Admin User ID is null or empty');
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final groups = await _groupService.getAdminGroups(adminUserId!) ?? [];
+      print('Admin User ID: $adminUserId');
+      print('Retrieved Groups: $groups');
+
+      if (groups.isEmpty) {
+        throw Exception('No groups found for the admin user');
       }
+
+      // Since admin can only be assigned to one group, we take the first group
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('group_id', groups[0]['id'] ?? '');
+
+      setState(() {
+        groupId = groups[0]['id'] ?? '';
+        groupName = groups[0]['name'] ?? 'Unknown Group';
+      });
+      print('Group ID: $groupId');
+      print('Group Name: $groupName');
+      _fetchDashboardData();
     } catch (e) {
       NotificationOverlay.of(context).showNotification(
         message: 'Failed to fetch groups: $e',
@@ -101,7 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: const Text("Admin Dashboard"),
         actions: [
           IconButton(
             icon: const Icon(Icons.account_circle),
@@ -135,23 +167,70 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildSummaryCard("Members", numberOfMembers.toString(), Icons.people_alt),
-                      _buildSummaryCard("Upcoming Events", numberOfUpcomingEvents.toString(), Icons.event),
+                      Expanded(child: _buildSummaryCard("Members", numberOfMembers.toString(), Icons.people_alt)),
+                      Expanded(child: _buildSummaryCard("Upcoming Events", numberOfUpcomingEvents.toString(), Icons.event)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/createEvent');
-                    },
-                    icon: const Icon(Icons.event),
-                    label: const Text("Add Events"),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.blueAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/createEvent');
+                        },
+                        icon: const Icon(Icons.event),
+                        label: const Text("Add Events"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                          backgroundColor: Colors.blue[200],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: const TextStyle(fontSize: 18),
+                        ),
                       ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Events coming up",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: FutureBuilder<List<dynamic>>(
+                      future: _eventService.getEventsByGroup(groupId!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('No upcoming events'));
+                        } else {
+                          final events = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: events.length,
+                            itemBuilder: (context, index) {
+                              return Card(
+                                color: Colors.blue[50],
+                                child: ListTile(
+                                  leading: Icon(Icons.event, color: Colors.blueAccent),
+                                  title: Text(
+                                    events[index]['title'],
+                                    style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(events[index]['location']),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EventDetails(event: events[index]),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        }
+                      },
                     ),
                   ),
                 ],

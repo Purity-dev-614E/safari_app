@@ -54,7 +54,6 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-
     String? role = prefs.getString('user_role');
     print('User Role: $role');
     if (role == null) {
@@ -79,8 +78,6 @@ class _MyAppState extends State<MyApp> {
     };
     _navigateTo(route);
   }
-
-
 
   @override
   Widget build(BuildContext context) {

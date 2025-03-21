@@ -1,3 +1,5 @@
+import 'package:church_app/screens/AddMembers.dart';
+import 'package:church_app/screens/editMembers.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -139,12 +141,13 @@ class _GroupMembersState extends State<GroupMembers> {
     }
   }
 
-  void _editMember(String memberId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EditMemberScreen(memberId: memberId)),
-    );
-  }
+void _editMember(String memberId) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => EditMemberScreen(memberId: memberId),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -233,9 +236,9 @@ class _GroupMembersState extends State<GroupMembers> {
                             itemCount: members.length,
                             itemBuilder: (context, index) {
                               final member = members[index];
-                              final name = member["name"]!;
-                              final email = member["email"]!;
-                              final role = member["role"]!;
+                              final name = member["full_name"] ?? "Unknown";
+                              final email = member["email"] ?? "Unknown";
+                              final role = member["role"] ?? "Member";
 
                               if (!name.toLowerCase().contains(searchQuery) &&
                                   !email.toLowerCase().contains(searchQuery)) {
@@ -306,10 +309,17 @@ class _GroupMembersState extends State<GroupMembers> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
-          );
+          if (groupId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
+            );
+          } else {
+            NotificationOverlay.of(context).showNotification(
+              message: 'Group ID is not available',
+              type: NotificationType.error,
+            );
+          }
         },
         backgroundColor: Colors.blue,
         child: const Icon(Icons.person_add_alt),
@@ -334,285 +344,5 @@ class _GroupMembersState extends State<GroupMembers> {
         },
       ),
     );
-  }
-}
-
-class AddMemberScreen extends StatefulWidget {
-  final String groupId;
-
-  const AddMemberScreen({required this.groupId, super.key});
-
-  @override
-  State<AddMemberScreen> createState() => _AddMemberScreenState();
-}
-
-class _AddMemberScreenState extends State<AddMemberScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
-  bool _isLoading = false;
-
-  Future<void> _addMember() async {
-    if (_emailController.text.isEmpty) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Please enter an email address',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _groupService.addGroupMemberByEmail(widget.groupId, _emailController.text);
-      if (mounted) {
-        Navigator.pop(context);
-        NotificationOverlay.of(context).showNotification(
-          message: 'Member added successfully',
-          type: NotificationType.success,
-        );
-      }
-    } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to add member: $e',
-        type: NotificationType.error,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Member"),
-        elevation: 0,
-        backgroundColor: Colors.blue,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
-                helperText: "Enter the email address of the member to add",
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _addMember,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      "Add Member",
-                      style: TextStyle(fontSize: 16),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-}
-
-class EditMemberScreen extends StatefulWidget {
-  final String memberId;
-
-  const EditMemberScreen({required this.memberId, super.key});
-
-  @override
-  State<EditMemberScreen> createState() => _EditMemberScreenState();
-}
-
-class _EditMemberScreenState extends State<EditMemberScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _roleController = TextEditingController();
-  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchMemberDetails();
-  }
-
-  Future<void> _fetchMemberDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      Map<String, dynamic> memberDetails = await _groupService.getGroupById(widget.memberId);
-      if (mounted) {
-        setState(() {
-          _nameController.text = memberDetails['name'];
-          _emailController.text = memberDetails['email'];
-          _roleController.text = memberDetails['role'];
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        NotificationOverlay.of(context).showNotification(
-          message: 'Failed to fetch member details: $e',
-          type: NotificationType.error,
-        );
-      }
-    }
-  }
-
-  Future<void> _updateMember() async {
-    if (_roleController.text.isEmpty) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Please enter a role',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _groupService.updateGroup(
-        widget.memberId,
-        {
-          'role': _roleController.text,
-        },
-      );
-      if (mounted) {
-        Navigator.pop(context);
-        NotificationOverlay.of(context).showNotification(
-          message: 'Member role updated successfully',
-          type: NotificationType.success,
-        );
-      }
-    } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to update member role: $e',
-        type: NotificationType.error,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Edit Member Role"),
-        elevation: 0,
-        backgroundColor: Colors.blue,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    enabled: false,
-                    decoration: const InputDecoration(
-                      labelText: "Name",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _emailController,
-                    enabled: false,
-                    decoration: const InputDecoration(
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _roleController,
-                    decoration: const InputDecoration(
-                      labelText: "Role",
-                      border: OutlineInputBorder(),
-                      helperText: "You can only modify the member's role",
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _updateMember,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            "Update Role",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _roleController.dispose();
-    super.dispose();
   }
 }

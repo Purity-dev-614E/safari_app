@@ -168,7 +168,7 @@ class GroupService {
   Future<List<dynamic>> getAdminGroups(String userId) async {
     final token = await _secureStorage.read(key: 'auth_token');
     final response = await http.get(
-      Uri.parse('$baseUrl/groups'),
+      Uri.parse('$baseUrl/groups/admin/$userId/groups'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -178,7 +178,7 @@ class GroupService {
     if (response.statusCode == 200) {
       final List<dynamic> groups = json.decode(response.body);
       final List<dynamic> adminGroups = groups.where((group) {
-        final List<dynamic> adminIds = group['admin_ids'];
+        final String adminIds = group['group_admin_id'];
         return adminIds.contains(userId);
       }).toList();
 

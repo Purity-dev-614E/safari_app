@@ -5,6 +5,8 @@ import '../constants/api_constants.dart';
 import 'attendanceDetails.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
+import 'package:intl/intl.dart';
+
 
 class AdminEventList extends StatefulWidget {
   final String groupId;
@@ -243,8 +245,20 @@ class _AddEventsScreenState extends State<AddEventsScreen> {
                     );
 
                     if (pickedTime != null) {
+                      // Combine pickedDate and pickedTime
+                      DateTime combinedDateTime = DateTime(
+                        pickedDate.year,
+                        pickedDate.month,
+                        pickedDate.day,
+                        pickedTime.hour,
+                        pickedTime.minute,
+                      );
+
+                      // Format the combined DateTime
+                      String formattedDateTime = DateFormat('yyyy-MM-dd HH:mm').format(combinedDateTime);
+
                       setState(() {
-                        _dateController.text = '${pickedDate.toLocal()} ${pickedTime.format(context)}';
+                        _dateController.text = formattedDateTime;
                       });
                     }
                   }
@@ -275,7 +289,12 @@ class _AddEventsScreenState extends State<AddEventsScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _addEvent,
+                  onPressed:
+                  _isLoading ? null : () async {
+                    await _addEvent();
+                    Navigator.pop(context);
+                  },
+
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
