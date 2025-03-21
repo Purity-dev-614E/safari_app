@@ -84,6 +84,11 @@ class _SuperSettingsState extends State<SuperSettings> {
     }
   }
 
+  // Future<void>getAdminName(String name) async {
+  //   SharedPreferences prefs =  await SharedPreferences.getInstance();
+  //
+  // }
+
   Future<void> _createGroup(String groupName) async {
     if (!await _isSuperAdmin()) {
       NotificationOverlay.of(context).showNotification(
@@ -344,8 +349,8 @@ class _SuperSettingsState extends State<SuperSettings> {
               TextField(
                 controller: fullnameController,
                 decoration: InputDecoration(
-                  hintText: "Enter admin's email",
-                  labelText: "Admin's Email",
+                  hintText: "Enter admin's Name",
+                  labelText: "Admin's Name",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.blue.shade200),
@@ -546,7 +551,7 @@ class _SuperSettingsState extends State<SuperSettings> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Admin: ${group['admin_name'] ?? 'None'}',
+                                      'Admin: ${group['group_admin_id'] ?? 'None'}',
                                       style: TextStyle(
                                         color: Colors.blue.shade700,
                                       ),

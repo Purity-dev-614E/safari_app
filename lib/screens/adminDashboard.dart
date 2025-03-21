@@ -4,10 +4,9 @@ import 'package:church_app/screens/Profile.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
 import 'package:church_app/services/eventService.dart';
-import 'package:church_app/services/userServices.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/widgets/notification_overlay.dart';
 import 'package:church_app/widgets/custom_notification.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -17,7 +16,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  String groupName = '';
+  String groupName = 'Unknown Group';
   int numberOfMembers = 0;
   int numberOfUpcomingEvents = 0;
   String? adminUserId;
@@ -26,108 +25,50 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
   final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
-  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
 
   @override
   void initState() {
     super.initState();
     _fetchAdminUserId();
-    _initializeGroupId();
   }
 
   Future<void> _fetchAdminUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      adminUserId = prefs.getString('user_id');
+      adminUserId = prefs.getString('user_id') ?? '';
     });
-  }
-
-  Future<void> _initializeGroupId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedGroupId = prefs.getString('group_id');
-
-    if (savedGroupId == null) {
-      String groupName = await _promptForGroupName();
-      String fetchedGroupId = await _fetchGroupIdByName(groupName);
-      await prefs.setString('group_id', fetchedGroupId);
-      setState(() {
-        groupId = fetchedGroupId;
-      });
+    if (adminUserId != null && adminUserId!.isNotEmpty) {
+      _fetchAdminGroups();
     } else {
       setState(() {
-        groupId = savedGroupId;
+        isLoading = false;
       });
     }
-
-    _fetchDashboardData();
   }
 
-  Future<String> _promptForGroupName() async {
-    String groupName = '';
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Enter Group Name'),
-          content: TextField(
-            onChanged: (value) {
-              groupName = value;
-            },
-            decoration: InputDecoration(
-              hintText: "Group Name",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-    return groupName;
-  }
-
-  Future<String> _fetchGroupIdByName(String groupName) async {
+  Future<void> _fetchAdminGroups() async {
     try {
-      final group = await _groupService.getGroupByName(groupName);
-
-      // Check if the current user is an admin of this group
-      if (adminUserId == null) {
-        throw Exception('Admin user ID not found');
+      final groups = await _groupService.getAdminGroups(adminUserId!);
+      if (groups.length == 1) {
+        setState(() {
+          groupId = groups[0]['id'] ?? '';
+          groupName = groups[0]['name'] ?? 'Unknown Group';
+        });
+        _fetchDashboardData();
+      } else {
+        // Handle multiple groups or navigate to a selection screen
+        setState(() {
+          isLoading = false;
+        });
       }
-
-      // Check if the current user is in the admins list
-      String admin = group['group_admin_id'] ?? "";
-      bool isAdmin = admin == adminUserId;
-
-      if (!isAdmin) {
-        throw Exception('You are not an admin of this group');
-      }
-
-      return group['id'];
     } catch (e) {
       NotificationOverlay.of(context).showNotification(
-        message: e.toString().contains('not an admin')
-            ? 'You are not an admin of this group. Please enter a group where you are an admin.'
-            : 'Failed to fetch group: ${e.toString()}',
+        message: 'Failed to fetch groups: $e',
         type: NotificationType.error,
       );
-      throw e;
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -140,7 +81,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       List<dynamic> events = await _eventService.getEventsByGroup(groupId!);
 
       setState(() {
-        groupName = groupDetails['name'];
+        groupName = groupDetails['name'] ?? 'Unknown Group';
         numberOfMembers = members.length;
         numberOfUpcomingEvents = events.length;
         isLoading = false;
@@ -179,50 +120,54 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       body: isLoading
           ? const Center(
-        child: CircularProgressIndicator(),
-      )
+              child: CircularProgressIndicator(),
+            )
           : Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              groupName,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSummaryCard("Members", numberOfMembers.toString(), Icons.people_alt),
-                _buildSummaryCard("Upcoming Events", numberOfUpcomingEvents.toString(), Icons.event),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/createEvent');
-              },
-              icon: const Icon(Icons.event),
-              label: const Text("Add Events"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    groupName,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildSummaryCard("Members", numberOfMembers.toString(), Icons.people_alt),
+                      _buildSummaryCard("Upcoming Events", numberOfUpcomingEvents.toString(), Icons.event),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/createEvent');
+                    },
+                    icon: const Icon(Icons.event),
+                    label: const Text("Add Events"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
-          );
+          if (groupId != null && groupId!.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddMemberScreen(groupId: groupId!)),
+            );
+          }
         },
         child: const Icon(Icons.person_add_alt),
+        backgroundColor: Colors.blueAccent,
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -236,12 +181,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
         onTap: (index) {
-          if (index == 0) {
+          if (index == 0 && groupId != null && groupId!.isNotEmpty) {
             Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
-          } else if (index == 1) {
+          } else if (index == 1 && groupId != null && groupId!.isNotEmpty) {
             Navigator.pushNamed(context, "/GroupAnalytics", arguments: groupId);
           }
         },
+        selectedItemColor: Colors.blueAccent,
       ),
     );
   }
@@ -254,7 +200,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Icon(icon, size: 40, color: Colors.blue),
+            Icon(icon, size: 40, color: Colors.blueAccent),
             const SizedBox(height: 8),
             Text(
               title,
