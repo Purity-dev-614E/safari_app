@@ -45,6 +45,7 @@ class _LoginState extends State<Login> {
 
       // Add null checks and default values
       final accessToken = response['session']?['access_token'] ?? '';
+      final refreshToken = response['session']?['refresh_token']?? '';
 
 
       if (accessToken.isEmpty) {
@@ -52,6 +53,7 @@ class _LoginState extends State<Login> {
       }
 
       await storage.write(key: 'auth_token', value: accessToken);
+      await storage.write(key: 'refresh_token', value: refreshToken);
 
 
       setState(() {
@@ -103,6 +105,7 @@ class _LoginState extends State<Login> {
     await prefs.setString('user_id', userId);
     await prefs.setString('user_role', userRole);
   }
+
 
   Future<void> _resetPassword() async {
     final email = emailController.text;

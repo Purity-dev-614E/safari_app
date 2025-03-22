@@ -43,7 +43,7 @@ class _UserDashboardState extends State<UserDashboard> {
     String? userId = prefs.getString('user_id');
     _userName = prefs.getString('full_name');
     _userRole = prefs.getString('user_role');
-    
+
     if (userId == null) return;
 
     try {
@@ -118,51 +118,51 @@ class _UserDashboardState extends State<UserDashboard> {
       ),
       body: _isLoading
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading dashboard...',
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _fetchDashboardData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Welcome Section
-                      _buildWelcomeSection(),
-                      const SizedBox(height: 24),
-
-                      // Quick Stats Section
-                      _buildQuickStatsSection(),
-                      const SizedBox(height: 24),
-
-                      // Upcoming Events Section
-                      _buildUpcomingEventsSection(),
-                      const SizedBox(height: 24),
-
-                      // Group Information Section
-                      if (_userGroup != null) _buildGroupSection(),
-                    ],
-                  ),
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading dashboard...',
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontSize: 16,
               ),
             ),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _fetchDashboardData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                _buildWelcomeSection(),
+                const SizedBox(height: 24),
+
+                // Quick Stats Section
+                _buildQuickStatsSection(),
+                const SizedBox(height: 24),
+
+                // Upcoming Events Section
+                _buildUpcomingEventsSection(),
+                const SizedBox(height: 24),
+
+                // Group Information Section
+                if (_userGroup != null) _buildGroupSection(),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -292,7 +292,7 @@ class _UserDashboardState extends State<UserDashboard> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  'Upcoming Events',
+                  'Events For You',
                   _upcomingEvents.length.toString(),
                   Icons.event,
                   Colors.green,
@@ -305,7 +305,8 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(String title, String value, IconData icon,
+      Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -372,7 +373,7 @@ class _UserDashboardState extends State<UserDashboard> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Upcoming Events',
+                'Events',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -538,7 +539,8 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildEventCard(String eventName, String dateTime, String location, Map<String, dynamic> event) {
+  Widget _buildEventCard(String eventName, String dateTime, String location,
+      Map<String, dynamic> event) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -555,13 +557,19 @@ class _UserDashboardState extends State<UserDashboard> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => EventDetails(event: event),
             ),
           );
+
+          if (result == true) {
+            setState(() {
+              _upcomingEvents.remove(event);
+            });
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

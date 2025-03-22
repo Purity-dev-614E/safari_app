@@ -2,6 +2,7 @@ import 'package:church_app/constants/api_constants.dart';
 import 'package:church_app/screens/AddMembers.dart';
 import 'package:church_app/screens/GroupMembers.dart';
 import 'package:church_app/screens/Profile.dart';
+import 'package:church_app/screens/adminEventList.dart';
 import 'package:church_app/screens/eventDetails.dart';
 import 'package:flutter/material.dart';
 import 'package:church_app/services/groupServices.dart';
@@ -172,12 +173,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton.icon(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children:[
+                      ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushReplacementNamed(context, '/createEvent');
+                          },
+                          icon: const Icon(Icons.event),
+                          label: const Text("Add Events"),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                            backgroundColor: Colors.blue[200],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+
+                      ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/createEvent');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AdminEventList(
+                                groupId: groupId!,
+                              ),
+                            ),
+                          );
                         },
-                        icon: const Icon(Icons.event),
-                        label: const Text("Add Events"),
+                        icon: const Icon(Icons.analytics_sharp),
+                        label: const Text("Attendance Tracking"),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
                           backgroundColor: Colors.blue[200],
@@ -187,6 +214,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           textStyle: const TextStyle(fontSize: 18),
                         ),
                       ),
+
+                    ]
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     "Events coming up",

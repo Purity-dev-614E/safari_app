@@ -39,17 +39,23 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
       List<dynamic> notAttended = [];
 
       for (var attendance in attendanceList) {
-        Map<String, dynamic> user = await _userService.getUserById(attendance['userId']);
-        if (attendance['attended'] == true) {
+        if (attendance['user_id'] == null) continue;
+        Map<String, dynamic> user = await _userService.getUserById(attendance['user_id']);
+        String fullName = user['full_name'] ?? "Unknown";
+        String topic = attendance['topic'] ?? "";
+        String aob = attendance['aob'] ?? "";
+        String apology = attendance['apology'] ?? "";
+
+        if (attendance['present'] == true) {
           attended.add({
-            'name': user['name'],
-            'topic': attendance['topic'],
-            'aob': attendance['aob'],
+            'full_name': fullName,
+            'topic': topic,
+            'aob': aob,
           });
         } else {
           notAttended.add({
-            'name': user['name'],
-            'apology': attendance['reason'],
+            'full_name': fullName,
+            'apology': apology,
           });
         }
       }
@@ -89,7 +95,7 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
                 CircleAvatar(
                   backgroundColor: isAttended ? Colors.green.shade100 : Colors.red.shade100,
                   child: Text(
-                    member['name'][0].toUpperCase(),
+                    member['full_name'][0].toUpperCase(),
                     style: TextStyle(
                       color: isAttended ? Colors.green : Colors.red,
                       fontWeight: FontWeight.bold,
@@ -99,7 +105,7 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    member['name'],
+                    member['full_name'],
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

@@ -93,6 +93,22 @@ class AnalyticsService {
       throw Exception('Failed to fetch attendance data: ${response.body}');
     }
   }
+  Future<Map<String, dynamic>> getGroupAttendanceByTimePeriod(String timePeriod, String groupId) async {
+    final token = await _secureStorage.read(key: 'auth_token');
+    final response = await http.get(
+      Uri.parse('$baseUrl/attendance/$groupId/attendance?timePeriod=$timePeriod'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch attendance data: ${response.body}');
+    }
+  }
 
   Future<List<dynamic>> getGroupDemographics(String id) async {
     final token = await _secureStorage.read(key: 'auth_token');

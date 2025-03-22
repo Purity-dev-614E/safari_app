@@ -17,9 +17,9 @@ class SuperAnalytics extends StatefulWidget {
 
 class _SuperAnalyticsState extends State<SuperAnalytics> {
   String selectedTimePeriod = 'week';
-  Map<String, dynamic>? attendanceData;
-  List<dynamic>? groupDemographics;
-  List<dynamic>? groups;
+  Map<String, dynamic>? attendanceData = {};
+  List<dynamic>? groupDemographics = [];
+  List<dynamic>? groups = [];
   String? superAdminUserId;
   bool _isLoading = true;
   bool _isRefreshing = false;
@@ -38,13 +38,13 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
   Future<void> _fetchSuperAdminUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      superAdminUserId = prefs.getString('user_id');
+      superAdminUserId = prefs.getString('user_id') ?? '';
     });
     _fetchAnalytics();
   }
 
   Future<bool> _isSuperAdmin() async {
-    if (superAdminUserId == null) return false;
+    if (superAdminUserId == null || superAdminUserId!.isEmpty) return false;
     try {
       Map<String, dynamic> userDetails = await _userService.getUserById(superAdminUserId!);
       return userDetails['role'] == 'super admin';
@@ -72,7 +72,7 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
 
     try {
       // Fetch groups
-      List<dynamic> fetchedGroups = await _groupService.getAllGroups();
+      List<dynamic> fetchedGroups = await _groupService.getAllGroups() ?? [];
 
       // If no group is selected and groups are available, select the first one
       if (selectedGroupId == null && fetchedGroups.isNotEmpty) {
@@ -80,12 +80,12 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
       }
 
       // Fetch attendance data for the selected time period
-      Map<String, dynamic>? fetchedAttendanceData = await _analyticsService.getAttendanceByTimePeriod(selectedTimePeriod);
+      Map<String, dynamic>? fetchedAttendanceData = await _analyticsService.getAttendanceByTimePeriod(selectedTimePeriod) ?? {};
 
       // Fetch group demographics for the selected group
       List<dynamic>? fetchedGroupDemographics = [];
       if (selectedGroupId != null) {
-        fetchedGroupDemographics = await _analyticsService.getGroupDemographics(selectedGroupId!);
+        fetchedGroupDemographics = await _analyticsService.getGroupDemographics(selectedGroupId!) ?? [];
       }
 
       setState(() {
@@ -219,7 +219,9 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: selectedGroupId,
+            value: groups != null && groups!.any((group) => group['id'] == selectedGroupId)
+                ? selectedGroupId
+                : null,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -238,17 +240,17 @@ class _SuperAnalyticsState extends State<SuperAnalytics> {
             ),
             items: groups != null && groups!.isNotEmpty
                 ? groups!.map<DropdownMenuItem<String>>((group) {
-              return DropdownMenuItem<String>(
-                value: group['id'],
-                child: Text(group['name']),
-              );
-            }).toList()
+                    return DropdownMenuItem<String>(
+                      value: group['id'],
+                      child: Text(group['name']),
+                    );
+                  }).toList()
                 : [
-              const DropdownMenuItem<String>(
-                value: null,
-                child: Text('No groups available'),
-              ),
-            ],
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('No groups available'),
+                    ),
+                  ],
             onChanged: (value) {
               if (value != null) {
                 setState(() {

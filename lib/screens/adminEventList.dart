@@ -95,7 +95,7 @@ class _AdminEventListState extends State<AdminEventList> {
                               child: Icon(Icons.event),
                             ),
                             title: Text(
-                              _events[index]['name'] ?? 'Untitled Event',
+                              _events[index]['title'] ?? 'Untitled Event',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
