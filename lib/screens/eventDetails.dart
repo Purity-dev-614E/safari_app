@@ -40,9 +40,7 @@ class _EventDetailsState extends State<EventDetails> {
  Future<void> _checkGroupMembership() async {
    SharedPreferences prefs = await SharedPreferences.getInstance();
    final groupId = widget.event['group_id'];
-   print('Group ID: $groupId');
    final userId = prefs.getString('user_id');
-   print('User ID: $userId');
 
    if (groupId == null || userId == null) {
      NotificationOverlay.of(context).showNotification(
@@ -54,13 +52,8 @@ class _EventDetailsState extends State<EventDetails> {
 
    try {
      List<dynamic> members = await _groupService.getGroupMembers(groupId);
-     print('User ID: $userId');
-     for (var member in members) {
-       print('Group Member: ${member['full_name']}');
-     }
      setState(() {
        isInGroup = members.any((member) => member['id'] == userId);
-       print('isInGroup: $isInGroup');
      });
    } catch (e) {
      NotificationOverlay.of(context).showNotification(
