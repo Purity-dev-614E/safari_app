@@ -77,7 +77,7 @@ class _UserDashboardState extends State<UserDashboard> {
       setState(() {
         _upcomingEvents = events;
         if (events.isNotEmpty) {
-          _nextEvent = events[0]['name'];
+          _nextEvent = events[0]['title'];
         }
         _isLoading = false;
       });
@@ -421,9 +421,9 @@ class _UserDashboardState extends State<UserDashboard> {
               itemBuilder: (context, index) {
                 final event = _upcomingEvents[index];
                 return _buildEventCard(
-                  event['name'],
-                  event['date'],
-                  event['location'],
+                  event['title'] ?? "",
+                  event['date'] ?? "",
+                  event['location'] ?? "",
                   event,
                 );
               },

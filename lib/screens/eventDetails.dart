@@ -37,21 +37,38 @@ class _EventDetailsState extends State<EventDetails> {
     });
   }
 
-  Future<void> _checkGroupMembership() async {
-    if (userId == null) return;
+ Future<void> _checkGroupMembership() async {
+   SharedPreferences prefs = await SharedPreferences.getInstance();
+   final groupId = widget.event['group_id'];
+   print('Group ID: $groupId');
+   final userId = prefs.getString('user_id');
+   print('User ID: $userId');
 
-    try {
-      List<dynamic> members = await _groupService.getGroupMembers(widget.event['groupId'] ?? '');
-      setState(() {
-        isInGroup = members.any((member) => member['id'] == userId);
-      });
-    } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Error checking group membership: $e',
-        type: NotificationType.error,
-      );
-    }
-  }
+   if (groupId == null || userId == null) {
+     NotificationOverlay.of(context).showNotification(
+       message: 'Group ID or User ID is missing',
+       type: NotificationType.error,
+     );
+     return;
+   }
+
+   try {
+     List<dynamic> members = await _groupService.getGroupMembers(groupId);
+     print('User ID: $userId');
+     for (var member in members) {
+       print('Group Member: ${member['full_name']}');
+     }
+     setState(() {
+       isInGroup = members.any((member) => member['id'] == userId);
+       print('isInGroup: $isInGroup');
+     });
+   } catch (e) {
+     NotificationOverlay.of(context).showNotification(
+       message: 'Error checking group membership: $e',
+       type: NotificationType.error,
+     );
+   }
+ }
 
   bool _canMarkAttendance() {
     if (!isInGroup) return false;
@@ -145,8 +162,8 @@ class _EventDetailsState extends State<EventDetails> {
                 try {
                   setState(() => _isLoading = true);
                   await _attendanceService.createAttendance(widget.event['id'], {
-                    'userId': userId,
-                    'attended': true,
+                    'user_id': userId,
+                    'present': true,
                     'topic': topicController.text.trim(),
                     'aob': aobController.text.trim(),
                   });
@@ -214,8 +231,8 @@ class _EventDetailsState extends State<EventDetails> {
                 try {
                   setState(() => _isLoading = true);
                   await _attendanceService.createAttendance(widget.event['id'], {
-                    'userId': userId,
-                    'attended': false,
+                    'user_id': userId,
+                    'present': false,
                     'reason': reasonController.text.trim(),
                   });
 

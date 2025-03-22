@@ -2,7 +2,9 @@ import 'package:church_app/constants/api_constants.dart';
 import 'package:church_app/services/tokenService.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:image_picker_for_web/image_picker_for_web.dart';
+import 'package:universal_io/io.dart' as uio;
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
 import '../widgets/notification_overlay.dart';
@@ -16,7 +18,7 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  File? _image;
+  uio.File? _image;
   String? _imageUrl;
   final picker = ImagePicker();
   String? _full_name = '';
@@ -33,25 +35,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         source: ImageSource.gallery,
         imageQuality: 70,
       );
-      
+
       if (pickedFile != null) {
         setState(() {
-          _image = File(pickedFile.path);
+          _image = uio.File(pickedFile.path);
           _isLoading = true;
         });
 
         try {
-          final imageUrl = await _userService.uploadProfilePicture(_image!);
+          final imageUrl = await _uploadImage(_image!);
           SharedPreferences prefs = await SharedPreferences.getInstance();
           String? userId = prefs.getString('user_id');
-          
+
           if (userId != null) {
             await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
             setState(() {
               _imageUrl = imageUrl;
               _isLoading = false;
             });
-            
+
             NotificationOverlay.of(context).showNotification(
               message: 'Profile picture updated successfully',
               type: NotificationType.success,
@@ -75,6 +77,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
+  Future<String> _uploadImage(uio.File image) async {
+    final request = http.MultipartRequest('POST', Uri.parse('${ApiConstants.baseUrl}/upload'));
+    request.files.add(await http.MultipartFile.fromPath('file', image.path));
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final responseData = await response.stream.bytesToString();
+      return responseData; // Assuming the response contains the image URL
+    } else {
+      throw Exception('Failed to upload image');
+    }
+  }
+
   Future<void> _fetchUserInfo() async {
     setState(() {
       _isLoading = true;
@@ -87,10 +102,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     try {
       final data = await _userService.getUserById(userId);
       setState(() {
-        _full_name = data['full_name'] ?? '';
-        _email = data['email'] ?? '';
-        _location = data['location'] ?? '';
-        _gender = data['gender'] ?? '';
+        _full_name = data['full_name'] ?? 'Not set';
+        _email = data['email'] ?? 'Not set';
+        _location = data['location'] ?? 'Not set';
+        _gender = data['gender'] ?? 'Not set';
         _imageUrl = data['profile_picture'];
         _isLoading = false;
       });
@@ -185,7 +200,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       ],
                                     ),
                                     child: ClipOval(
-                                      child: _image != null 
+                                      child: _image != null
                                           ? Image.file(
                                               _image!,
                                               fit: BoxFit.cover,
