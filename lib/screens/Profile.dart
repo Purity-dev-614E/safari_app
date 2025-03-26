@@ -1,14 +1,16 @@
+import 'dart:convert';
 import 'package:church_app/constants/api_constants.dart';
+import 'package:church_app/services/image_upload_service.dart';
 import 'package:church_app/services/tokenService.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_picker_for_web/image_picker_for_web.dart';
 import 'package:universal_io/io.dart' as uio;
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/userServices.dart';
 import '../widgets/notification_overlay.dart';
 import '../widgets/custom_notification.dart';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -28,27 +30,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _isLoading = false;
 
   final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
+  final ImageUploadService _imageUploadService = ImageUploadService();
 
   Future<void> _pickImage() async {
     try {
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true, // Ensures we get `Uint8List`
       );
 
-      if (pickedFile != null) {
+      if (result != null && result.files.first.bytes != null) {
+        Uint8List fileBytes = result.files.first.bytes!;
+        String fileName = result.files.first.name;
+
         setState(() {
-          _image = uio.File(pickedFile.path);
           _isLoading = true;
         });
 
         try {
-          final imageUrl = await _uploadImage(_image!);
+          final imageUrl = await _imageUploadService.uploadImage(fileBytes, fileName);
+
           SharedPreferences prefs = await SharedPreferences.getInstance();
           String? userId = prefs.getString('user_id');
 
           if (userId != null) {
             await _userService.updateUserProfile(userId, {'profile_picture': imageUrl});
+
             setState(() {
               _imageUrl = imageUrl;
               _isLoading = false;
@@ -63,6 +70,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           setState(() {
             _isLoading = false;
           });
+
           NotificationOverlay.of(context).showNotification(
             message: 'Failed to upload image: $e',
             type: NotificationType.error,
@@ -74,19 +82,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         message: 'Failed to pick image: $e',
         type: NotificationType.error,
       );
-    }
-  }
-
-  Future<String> _uploadImage(uio.File image) async {
-    final request = http.MultipartRequest('POST', Uri.parse('${ApiConstants.baseUrl}/upload'));
-    request.files.add(await http.MultipartFile.fromPath('file', image.path));
-    final response = await request.send();
-
-    if (response.statusCode == 200) {
-      final responseData = await response.stream.bytesToString();
-      return responseData; // Assuming the response contains the image URL
-    } else {
-      throw Exception('Failed to upload image');
     }
   }
 
@@ -201,14 +196,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     ),
                                     child: ClipOval(
                                       child: _image != null
-                                          ? Image.file(
-                                              _image!,
-                                              fit: BoxFit.cover,
+                                          ? FutureBuilder<Uint8List>(
+                                              future: _image!.readAsBytes(),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState == ConnectionState.done) {
+                                                  if (snapshot.hasError) {
+                                                    return Icon(
+                                                      Icons.error,
+                                                      color: Colors.red,
+                                                      size: 60,
+                                                    );
+                                                  }
+                                                  return Image.memory(
+                                                    snapshot.data!,
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                } else {
+                                                  return Center(
+                                                    child: CircularProgressIndicator(),
+                                                  );
+                                                }
+                                              },
                                             )
                                           : (_imageUrl != null && _imageUrl!.isNotEmpty
                                               ? Image.network(
                                                   _imageUrl!,
                                                   fit: BoxFit.cover,
+                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                    if (loadingProgress == null) return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(),
+                                                    );
+                                                  },
+                                                  errorBuilder: (context, error, stackTrace) => Icon(
+                                                    Icons.error,
+                                                    color: Colors.red,
+                                                    size: 60,
+                                                  ),
                                                 )
                                               : Container(
                                                   color: Colors.blue.shade50,

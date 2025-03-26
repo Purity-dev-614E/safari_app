@@ -8,6 +8,7 @@ import 'package:church_app/screens/UserManagement.dart';
 import 'package:church_app/screens/adminDashboard.dart';
 import 'package:church_app/screens/adminEventList.dart';
 import 'package:church_app/screens/register.dart';
+import 'package:church_app/screens/reset_password.dart';
 import 'package:church_app/screens/super_admin_dashoard.dart';
 import 'package:church_app/screens/userDashboard.dart';
 import 'package:flutter/material.dart';
@@ -102,6 +103,7 @@ class _MyAppState extends State<MyApp> {
         '/GroupMembers': (context) => const GroupMembers(),
         '/GroupAnalytics': (context) => const GroupAnalytics(),
         '/createEvent': (context) => const AddEventsScreen(),
+        '/resetpassword': (context) => ForgotPasswordScreen(),
       },
     );
   }

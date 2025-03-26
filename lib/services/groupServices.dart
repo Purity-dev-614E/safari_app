@@ -1,12 +1,20 @@
 import 'dart:convert';
+import 'package:church_app/services/authServices.dart';
+import 'package:church_app/services/http_interceptor.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_interceptor/http/intercepted_client.dart';
 
 class GroupService {
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late http.Client client;
 
-  GroupService({required this.baseUrl}) : assert(!baseUrl.endsWith('/'), 'baseUrl should not end with a slash');
+  GroupService({required this.baseUrl}){
+    client = InterceptedClient.build(interceptors: [
+      TokenInterceptor(authService: AuthService(baseUrl: baseUrl))
+    ]);
+  }
 
   Future<Map<String, dynamic>> createGroup(Map<String, dynamic> groupData) async {
     final token = await _secureStorage.read(key: 'auth_token');

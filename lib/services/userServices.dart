@@ -1,33 +1,49 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:church_app/constants/api_constants.dart';
+import 'package:church_app/services/authServices.dart';
+import 'package:church_app/services/http_interceptor.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_interceptor/http/intercepted_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late http.Client client;
 
-  UserService({required this.baseUrl}) : assert(!baseUrl.endsWith('/'), 'baseUrl should not end with a slash');
+  UserService({required this.baseUrl}){
+    client = InterceptedClient.build(interceptors: [
+      TokenInterceptor(authService: AuthService(baseUrl: baseUrl))
+    ]);
+  }
 
-  Future<String> uploadProfilePicture(File image) async {
+  Future<String> uploadImage(String base64Image, String fileName) async {
     final token = await _secureStorage.read(key: 'auth_token');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final id = prefs.getString('user_id');
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$id/uploadimage'));
-    request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(await http.MultipartFile.fromPath('file', image.path));
 
-    final response = await request.send();
+    final response = await http.put(
+      Uri.parse('https://safari-backend-production-bf65.up.railway.app/api/users/$id/uploadimage'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "image": base64Image, // Ensure this matches the backend field name
+        "filename": fileName,
+      }),
+    );
 
     if (response.statusCode == 200) {
-      final responseBody = await response.stream.bytesToString();
-      final responseData = jsonDecode(responseBody);
-      return responseData['url']; // Assuming the server returns the URL in a field named 'url'
+      final responseData = jsonDecode(response.body);
+      return responseData['url']; // Assuming server returns the URL
     } else {
-      throw Exception('Failed to upload image: ${response.reasonPhrase}');
+      throw Exception('Failed to upload image: ${response.body}');
     }
   }
+
 
   Future<void> updateUserProfile(String userId, Map<String, dynamic> data) async {
     final token = await _secureStorage.read(key: 'auth_token');

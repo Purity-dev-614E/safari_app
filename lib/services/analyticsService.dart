@@ -1,13 +1,21 @@
 import 'dart:convert';
+import 'package:church_app/services/authServices.dart';
+import 'package:church_app/services/http_interceptor.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_interceptor/http/intercepted_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AnalyticsService {
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late http.Client client;
 
-  AnalyticsService({required this.baseUrl});
+  AnalyticsService({required this.baseUrl}){
+    client = InterceptedClient.build(interceptors: [
+      TokenInterceptor(authService: AuthService(baseUrl: baseUrl) )
+    ]);
+  }
 
   Future<List<dynamic>> getUserAttendance(String userId) async {
     final token = await _secureStorage.read(key: 'auth_token');
@@ -110,22 +118,21 @@ class AnalyticsService {
     }
   }
 
-  Future<List<dynamic>> getGroupDemographics(String id) async {
+
+  Future<List<dynamic>> getOverallAttendanceByPeriod(String period) async {
     final token = await _secureStorage.read(key: 'auth_token');
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString('group_id');
-    final response = await http.get(
-      Uri.parse('$baseUrl/$id/groupDemographics'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+    final url = Uri.parse('$baseUrl/groups/attendance/$period');
+    final response = await http.get(url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return json.decode(response.body);
     } else {
-      throw Exception('Failed to fetch group demographics: ${response.body}');
+      throw Exception('Failed to load overall attendance');
     }
   }
 }

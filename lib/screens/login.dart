@@ -107,74 +107,15 @@ class _LoginState extends State<Login> {
   }
 
 
-  Future<void> _resetPassword() async {
-    final email = emailController.text;
-
-    if (email.isEmpty) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Please enter your email address',
-        type: NotificationType.warning,
-      );
-      return;
-    }
-
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      await authService.resetPassword(email);
-      
-      setState(() {
-        isLoading = false;
-      });
-
-      if (mounted) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green),
-                  SizedBox(width: 8),
-                  Text('Password Reset Email Sent'),
-                ],
-              ),
-            content: const Text(
-              'Please check your email for instructions to reset your password. '
-              'If you don\'t see the email, please check your spam folder.'
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to send reset email: ${e.toString()}',
-        type: NotificationType.error,
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       body: Container(
+        width: screenSize.width,
+        height: screenSize.height,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -186,12 +127,12 @@ class _LoginState extends State<Login> {
           ),
         ),
         child: SafeArea(
-        child: SingleChildScrollView(
+          child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const SizedBox(height: 40),
                   Center(
                     child: Container(
@@ -216,22 +157,22 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                   const SizedBox(height: 40),
-              Center(
-                child: Text(
-                  'Welcome to Church',
-                  style: TextStyle(
+                  Center(
+                    child: Text(
+                      'Welcome to Church',
+                      style: TextStyle(
                         fontSize: 32.0,
-                    fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                         color: Colors.blue.shade700,
                         letterSpacing: 1.5,
+                      ),
+                    ),
                   ),
-                ),
-              ),
                   const SizedBox(height: 8),
                   Center(
                     child: Text(
                       'Sign in to continue',
-                style: TextStyle(
+                      style: TextStyle(
                         fontSize: 16.0,
                         color: Colors.blue.shade700,
                         letterSpacing: 0.5,
@@ -256,8 +197,8 @@ class _LoginState extends State<Login> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-              TextField(
-                controller: emailController,
+                        TextField(
+                          controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             labelText: 'Email Address',
@@ -279,11 +220,11 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         const SizedBox(height: 20),
-              TextField(
-                controller: passwordController,
+                        TextField(
+                          controller: passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
-                  labelText: 'Password',
+                            labelText: 'Password',
                             prefixIcon: Icon(Icons.lock, color: Colors.blue.shade700),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -313,19 +254,21 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _resetPassword,
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(context, "/resetpassword");
+                            },
                             child: Text(
-                    'Forgot Password?',
-                    style: TextStyle(
+                              'Forgot Password?',
+                              style: TextStyle(
                                 color: Colors.blue.shade700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: isLoading ? null : _login,
@@ -341,14 +284,14 @@ class _LoginState extends State<Login> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                child: CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
                               : const Text(
                                   'Sign In',
-                    style: TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -363,12 +306,12 @@ class _LoginState extends State<Login> {
                               'Don\'t have an account? ',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, "/register");
-                },
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushReplacementNamed(context, "/register");
+                              },
                               child: Text(
                                 'Sign Up',
                                 style: TextStyle(

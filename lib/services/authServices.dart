@@ -1,10 +1,17 @@
 import 'dart:convert';
+import 'package:church_app/services/http_interceptor.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_interceptor/http/intercepted_client.dart';
 
 class AuthService {
   final String baseUrl;
+  late http.Client client;
 
-  AuthService({required this.baseUrl});
+  AuthService({required this.baseUrl}){
+    client = InterceptedClient.build(interceptors: [
+      TokenInterceptor(authService: this)
+    ]);
+  }
 
   Future<Map<String, dynamic>> signUp(String email, String password) async {
     final response = await http.post(
@@ -50,6 +57,20 @@ class AuthService {
       }
     } catch (e) {
       throw Exception('Failed to send reset password email: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/refresh-token'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'refresh_token': refreshToken}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to refresh token: ${response.body}');
     }
   }
 }

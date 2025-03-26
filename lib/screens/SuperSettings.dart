@@ -67,6 +67,13 @@ class _SuperSettingsState extends State<SuperSettings> {
 
     try {
       List<dynamic> groupData = await _groupService.getAllGroups();
+      for (var group in groupData) {
+        if (group['group_admin_id'] != null) {
+          group['admin_name'] = await _fetchAdminName(group['group_admin_id']);
+        } else {
+          group['admin_name'] = 'None';
+        }
+      }
       setState(() {
         groups = groupData ?? [];
         isLoading = false;
@@ -84,10 +91,6 @@ class _SuperSettingsState extends State<SuperSettings> {
     }
   }
 
-  // Future<void>getAdminName(String name) async {
-  //   SharedPreferences prefs =  await SharedPreferences.getInstance();
-  //
-  // }
 
   Future<void> _createGroup(String groupName) async {
     if (!await _isSuperAdmin()) {
@@ -418,13 +421,21 @@ class _SuperSettingsState extends State<SuperSettings> {
       },
     );
   }
+  Future<String> _fetchAdminName(String adminId) async {
+    try {
+      Map<String, dynamic> userDetails = await _userService.getUserById(adminId);
+      return userDetails['full_name'] ?? 'Unknown';
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Super Admin Settings",
+          "Group Settings",
           style: TextStyle(
             color: Colors.blue.shade700,
             fontWeight: FontWeight.bold,
@@ -551,7 +562,7 @@ class _SuperSettingsState extends State<SuperSettings> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Admin: ${group['group_admin_id'] ?? 'None'}',
+                                      'Admin: ${group['admin_name'] ?? 'None'}',
                                       style: TextStyle(
                                         color: Colors.blue.shade700,
                                       ),

@@ -1,14 +1,11 @@
-import 'package:church_app/services/groupServices.dart';
-import 'package:church_app/services/userServices.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:church_app/services/attendanceService.dart';
 import 'package:church_app/services/eventService.dart';
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:church_app/widgets/notification_overlay.dart';
-import 'package:church_app/widgets/custom_notification.dart';
-
+import '../services/attendanceService.dart';
 import '../constants/api_constants.dart';
+import '../widgets/custom_notification.dart';
+import '../widgets/notification_overlay.dart';
 
 class GroupAnalytics extends StatefulWidget {
   const GroupAnalytics({super.key});
@@ -18,549 +15,320 @@ class GroupAnalytics extends StatefulWidget {
 }
 
 class _GroupAnalyticsState extends State<GroupAnalytics> {
-  String selectedTimeFilter = "Week";
-  List<dynamic>? eventAttendance;
-  List<dynamic>? periodicAttendance;
-  String? adminUserId;
+  List<dynamic>? events;
+  Map<String, List<dynamic>> attendedUsers = {};
   String? groupId;
   bool isLoading = true;
-  String? groupName;
-  int totalMembers = 0;
-  int totalEvents = 0;
-  double averageAttendance = 0;
-  bool _isRefreshing = false;
 
   final AttendanceService _attendanceService = AttendanceService(baseUrl: ApiConstants.baseUrl);
   final EventService _eventService = EventService(baseUrl: ApiConstants.baseUrl);
-  final UserService _userService = UserService(baseUrl: ApiConstants.usersUrl);
-  final GroupService _groupService = GroupService(baseUrl: ApiConstants.baseUrl);
 
   @override
   void initState() {
     super.initState();
-    _fetchAdminUserId();
     _initializeGroupId();
-  }
-
-  Future<void> _fetchAdminUserId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      adminUserId = prefs.getString('user_id');
-    });
   }
 
   Future<void> _initializeGroupId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? savedGroupId = prefs.getString('group_id');
 
-    if (savedGroupId == null) {
-      String groupName = await _promptForGroupName();
-      String fetchedGroupId = await _fetchGroupIdByName(groupName);
-      await prefs.setString('group_id', fetchedGroupId);
-      setState(() {
-        groupId = fetchedGroupId;
-      });
-    } else {
+    if (savedGroupId != null) {
       setState(() {
         groupId = savedGroupId;
       });
-    }
-
-    _fetchAnalytics();
-  }
-
-  Future<String> _promptForGroupName() async {
-    String groupName = '';
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Enter Group Name'),
-          content: TextField(
-            onChanged: (value) {
-              groupName = value;
-            },
-            decoration: const InputDecoration(
-              hintText: "Group Name",
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return groupName;
-  }
-
-  Future<String> _fetchGroupIdByName(String groupName) async {
-    try {
-      final group = await _groupService.getGroupByName(groupName);
-      return group['id'];
-    } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to fetch group ID by name: $e',
-        type: NotificationType.error,
-      );
-      throw Exception('Failed to fetch group ID by name: $e');
+      await _fetchEvents();
+      await _fetchAttendedUsers();
     }
   }
 
-  Future<void> _fetchAnalytics() async {
+  Future<void> _fetchEvents() async {
     if (groupId == null || groupId!.isEmpty) return;
-
-    if (!await _isAdmin()) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'You do not have permission to view this page',
-        type: NotificationType.error,
-      );
-      return;
-    }
 
     setState(() {
       isLoading = true;
-      _isRefreshing = true;
     });
 
     try {
-      // Fetch group details
-      final groupDetails = await _groupService.getGroupById(groupId!);
-      final members = await _groupService.getGroupMembers(groupId!);
-      final events = await _eventService.getEventsByGroup(groupId!);
-
-      // Fetch attendance data
-      List<dynamic>? fetchedEventAttendance = await _eventService.getEventsByGroup(groupId!);
-      List<dynamic>? fetchedPeriodicAttendance = await _attendanceService.getAttendanceByTimePeriod(
-        groupId!,
-        selectedTimeFilter,
-      );
-
-      // Calculate statistics
-      double totalAttendance = 0;
-      int attendanceCount = 0;
-      for (var event in events) {
-        if (event['attendance_count'] != null) {
-          totalAttendance += event['attendance_count'];
-          attendanceCount++;
-        }
-      }
-
+      List<dynamic>? fetchedEvents = await _eventService.getEventsByGroup(groupId!);
       setState(() {
-        eventAttendance = fetchedEventAttendance;
-        periodicAttendance = fetchedPeriodicAttendance;
-        groupName = groupDetails['name'];
-        totalMembers = members.length;
-        totalEvents = events.length;
-        averageAttendance = attendanceCount > 0 ? totalAttendance / attendanceCount : 0;
+        events = fetchedEvents;
         isLoading = false;
-        _isRefreshing = false;
       });
     } catch (e) {
       setState(() {
         isLoading = false;
-        _isRefreshing = false;
       });
       NotificationOverlay.of(context).showNotification(
-        message: 'Failed to fetch analytics data: $e',
+        message: 'Failed to fetch attended Users: $e',
         type: NotificationType.error,
       );
     }
   }
 
-  Future<bool> _isAdmin() async {
-    if (adminUserId == null) return false;
+  Future<void> _fetchAttendedUsers() async {
+    if (events == null || events!.isEmpty) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
-      Map<String, dynamic> userDetails = await _userService.getUserById(adminUserId!);
-      return userDetails['role'] == 'admin';
+      for (var event in events!) {
+        List<dynamic> users = await _attendanceService.getByAttendedUsers(event['id']);
+        setState(() {
+          attendedUsers[event['id']] = users;
+        });
+      }
+      setState(() {
+        isLoading = false;
+      });
     } catch (e) {
-      NotificationOverlay.of(context).showNotification(
-        message: 'Failed to fetch user details: $e',
-        type: NotificationType.error,
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch attended users: $e')),
       );
-      return false;
     }
   }
 
-  Widget _buildSummaryCards() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSummaryCard(
-              'Total Members',
-              totalMembers.toString(),
-              Icons.people,
-              Colors.blue,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildSummaryCard(
-              'Total Events',
-              totalEvents.toString(),
-              Icons.event,
-              Colors.green,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildSummaryCard(
-              'Avg. Attendance',
-              averageAttendance.toStringAsFixed(1),
-              Icons.people_outline,
-              Colors.orange,
-            ),
-          ),
-        ],
-      ),
-    );
+  double _calculateAverageAttendance() {
+    if (attendedUsers.isEmpty) return 0.0;
+    int totalAttendance = attendedUsers.values.fold(0, (sum, users) => sum + users.length);
+    return totalAttendance / attendedUsers.length;
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: color.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeFilter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Time Period',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: selectedTimeFilter,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+  Widget _buildAverageAttendanceCard() {
+    double averageAttendance = _calculateAverageAttendance();
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Average Attendance',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
               ),
-              filled: true,
-              fillColor: Colors.grey.shade100,
             ),
-            items: ['Week', 'Month', 'Year'].map((filter) {
-              return DropdownMenuItem(
-                value: filter,
-                child: Text(filter),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  selectedTimeFilter = value;
-                });
-                _fetchAnalytics();
-              }
-            },
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              averageAttendance.toStringAsFixed(2),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEventAttendanceChart() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Event Attendance',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 300,
-            child: eventAttendance != null && eventAttendance!.isNotEmpty
-                ? LineChart(
-                    LineChartData(
-                      gridData: FlGridData(show: true),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: true),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: eventAttendance!.map((data) {
-                            return FlSpot(
-                              data['eventId'].toDouble(),
-                              data['count'].toDouble(),
-                            );
-                          }).toList(),
-                          isCurved: true,
-                          color: Colors.blue,
-                          barWidth: 3,
-                          dotData: FlDotData(show: true),
-                        ),
-                      ],
-                    ),
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.bar_chart,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No event attendance data available',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodicAttendanceChart() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Periodic Attendance',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 300,
-            child: periodicAttendance != null && periodicAttendance!.isNotEmpty
-                ? LineChart(
-                    LineChartData(
-                      gridData: FlGridData(show: true),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: true),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: true),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: periodicAttendance!.map((data) {
-                            return FlSpot(
-                              data['time'].toDouble(),
-                              data['count'].toDouble(),
-                            );
-                          }).toList(),
-                          isCurved: true,
-                          color: Colors.green,
-                          barWidth: 3,
-                          dotData: FlDotData(show: true),
-                        ),
-                      ],
-                    ),
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.trending_up,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No periodic attendance data available',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
+ Widget _buildEventAttendanceBarChart() {
+   return Container(
+     padding: const EdgeInsets.all(16),
+     decoration: BoxDecoration(
+       color: Colors.white,
+       borderRadius: BorderRadius.circular(12),
+       boxShadow: [
+         BoxShadow(
+           color: Colors.grey.withOpacity(0.1),
+           spreadRadius: 1,
+           blurRadius: 3,
+           offset: const Offset(0, 2),
+         ),
+       ],
+     ),
+     child: Column(
+       crossAxisAlignment: CrossAxisAlignment.start,
+       children: [
+         const Text(
+           'Event Attendance',
+           style: TextStyle(
+             fontSize: 18,
+             fontWeight: FontWeight.bold,
+             color: Colors.blue,
+           ),
+         ),
+         const SizedBox(height: 16),
+         SizedBox(
+           height: 300,
+           child: events != null && events!.isNotEmpty
+               ? BarChart(
+                   BarChartData(
+                     alignment: BarChartAlignment.spaceAround,
+                     barGroups: events!.map((event) {
+                       return BarChartGroupData(
+                         x: events!.indexOf(event),
+                         barRods: [
+                           BarChartRodData(
+                             toY: (attendedUsers[event['id']]?.length ?? 0).toDouble(),
+                             color: Colors.blue, // Use color for a single color
+                             width: 16,
+                             borderRadius: BorderRadius.circular(4),
+                             gradient: const LinearGradient(
+                               colors: [Colors.blue, Colors.lightBlueAccent],
+                               begin: Alignment.bottomCenter,
+                               end: Alignment.topCenter,
+                             ),
+                           ),
+                         ],
+                       );
+                     }).toList(),
+                     titlesData: FlTitlesData(
+                       leftTitles: AxisTitles(
+                         sideTitles: SideTitles(
+                           showTitles: true,
+                           getTitlesWidget: (value, meta) {
+                             return Text(
+                               value.toInt().toString(),
+                               style: const TextStyle(
+                                 color: Colors.black,
+                                 fontSize: 12,
+                               ),
+                             );
+                           },
+                         ),
+                       ),
+                       bottomTitles: AxisTitles(
+                         sideTitles: SideTitles(
+                           showTitles: true,
+                           getTitlesWidget: (value, meta) {
+                             return Text(
+                               events![value.toInt()]['title'] ?? "",
+                               style: const TextStyle(
+                                 color: Colors.black,
+                                 fontSize: 12,
+                               ),
+                             );
+                           },
+                         ),
+                       ),
+                     ),
+                     gridData: FlGridData(
+                       show: true,
+                       drawVerticalLine: true,
+                       getDrawingHorizontalLine: (value) {
+                         return FlLine(
+                           color: Colors.grey.withOpacity(0.2),
+                           strokeWidth: 1,
+                         );
+                       },
+                       getDrawingVerticalLine: (value) {
+                         return FlLine(
+                           color: Colors.grey.withOpacity(0.2),
+                           strokeWidth: 1,
+                         );
+                       },
+                     ),
+                     borderData: FlBorderData(
+                       show: true,
+                       border: Border.all(
+                         color: Colors.grey.withOpacity(0.2),
+                       ),
+                     ),
+                   ),
+                 )
+               : Center(
+                   child: Column(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       Icon(
+                         Icons.bar_chart,
+                         size: 48,
+                         color: Colors.grey.shade400,
+                       ),
+                       const SizedBox(height: 16),
+                       Text(
+                         'No event attendance data available',
+                         style: TextStyle(
+                           color: Colors.grey.shade600,
+                           fontSize: 16,
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
+         ),
+       ],
+     ),
+   );
+ }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(groupName != null ? "Analytics - $groupName" : "Group Analytics"),
-        elevation: 0,
+        title: const Text("Group Analytics"),
         backgroundColor: Colors.blue,
-        actions: [
-          IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: _isRefreshing ? null : _fetchAnalytics,
-          ),
-        ],
       ),
       body: isLoading
           ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Loading analytics data...',
-                    style: TextStyle(color: Colors.grey),
+                  _buildAverageAttendanceCard(),
+                  _buildEventAttendanceBarChart(),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullReportScreen(events: events, attendedUsers: attendedUsers),
+                        ),
+                      );
+                    },
+                    child: const Text('Full Report'),
                   ),
                 ],
               ),
-            )
-          : RefreshIndicator(
-              onRefresh: _fetchAnalytics,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSummaryCards(),
-                    const SizedBox(height: 16),
-                    _buildTimeFilter(),
-                    const SizedBox(height: 16),
-                    _buildEventAttendanceChart(),
-                    const SizedBox(height: 16),
-                    _buildPeriodicAttendanceChart(),
-                  ],
-                ),
-              ),
             ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: "Group Members",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: "Dashboard",
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, "/GroupMembers", arguments: groupId);
-          } else if (index == 1) {
-            Navigator.pushNamed(context, "/adminDashboard", arguments: groupId);
-          }
-        },
-      ),
     );
   }
 }
+
+class FullReportScreen extends StatelessWidget {
+  final List<dynamic>? events;
+  final Map<String, List<dynamic>> attendedUsers;
+
+  const FullReportScreen({Key? key, this.events, required this.attendedUsers}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Full Report'),
+        backgroundColor: Colors.blue,
+      ),
+      body: events != null && events!.isNotEmpty
+          ? ListView.builder(
+              itemCount: events!.length,
+              itemBuilder: (context, index) {
+                final event = events![index];
+                return ListTile(
+                  title: Text(event['title']?? ""),
+                  subtitle: Text('Attendance: ${attendedUsers[event['id']]?.length ?? 0}'),
+                );
+              },
+            )
+          : const Center(
+              child: Text('No event attendance data available'),
+            ),
+    );
+  }
+}
+
+
+
